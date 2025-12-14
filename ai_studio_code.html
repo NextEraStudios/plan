@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>A-Level Study Tracker</title>
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --accent-blue: #007AFF;
+            --bio-color: #34C759;
+            --chem-color: #FF9500;
+            --phys-color: #5856D6;
+            --math-color: #FF2D55;
+            --border-radius: 16px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 40px;
+            color: var(--text-primary);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Safe Area for iPhone Notch */
+        header {
+            background: var(--card-bg);
+            padding: max(20px, env(safe-area-inset-top)) 20px 20px;
+            border-bottom: 1px solid #E5E5EA;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { margin: 0; font-size: 22px; font-weight: 700; }
+        .overall-progress { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+
+        /* Date Navigation */
+        .date-nav {
+            display: flex;
+            overflow-x: auto;
+            padding: 15px 20px;
+            gap: 10px;
+            scrollbar-width: none; /* Firefox */
+        }
+        .date-nav::-webkit-scrollbar { display: none; }
+
+        .date-pill {
+            background: var(--card-bg);
+            min-width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .date-pill.active {
+            border-color: var(--accent-blue);
+            background: #EBF3FF;
+        }
+        
+        .date-pill.completed {
+            background: #E8F5E9; /* Light green background for completed days */
+        }
+
+        .date-pill span:first-child { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; }
+        .date-pill span:last-child { font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+        /* Main Content */
+        .container {
+            padding: 0 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .day-header {
+            margin: 20px 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        
+        .day-header h2 { margin: 0; font-size: 28px; }
+        .day-status { font-size: 14px; font-weight: 600; color: var(--accent-blue); }
+
+        /* Subject Cards */
+        .subject-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border-left: 6px solid #ccc;
+        }
+
+        .subject-card.biology { border-left-color: var(--bio-color); }
+        .subject-card.chemistry { border-left-color: var(--chem-color); }
+        .subject-card.physics { border-left-color: var(--phys-color); }
+        .subject-card.maths { border-left-color: var(--math-color); }
+
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .subject-title {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .subject-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+        }
+        .biology .subject-badge { background: var(--bio-color); }
+        .chemistry .subject-badge { background: var(--chem-color); }
+        .physics .subject-badge { background: var(--phys-color); }
+        .maths .subject-badge { background: var(--math-color); }
+
+        .topic-name {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #F2F2F7;
+        }
+
+        /* Checkbox List */
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #C7C7CC;
+        }
+
+        /* Custom Checkbox */
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid #C7C7CC;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .task-item.completed .checkbox {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .task-item.completed .checkbox::after {
+            display: block;
+        }
+
+        .task-text {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        /* Empty State */
+        .done-message {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        .done-message h3 { font-size: 24px; margin-bottom: 10px; }
+        .done-message p { color: var(--text-secondary); }
+
+        /* Progress Bar */
+        .progress-container {
+            height: 6px;
+            background: #E5E5EA;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <h1>Study Plan 2025/26</h1>
+        <div class="overall-progress">
+            <span id="total-percent">0%</span> Complete
+        </div>
+    </div>
+    <div class="progress-container">
+        <div class="progress-fill" id="global-progress-bar"></div>
+    </div>
+</header>
+
+<div class="date-nav" id="date-nav">
+    <!-- Generated via JS -->
+</div>
+
+<div class="container">
+    <div class="day-header">
+        <h2 id="current-date-display">December 15</h2>
+        <span class="day-status" id="day-status">0/2 Completed</span>
+    </div>
+
+    <div id="cards-container">
+        <!-- Cards injected via JS -->
+    </div>
+    
+    <div class="done-message" id="done-message">
+        <h3>🎉 All done for today!</h3>
+        <p>Great job. Rest up for tomorrow.</p>
+    </div>
+</div>
+
+<script>
+    // --- DATA ---
+    // The Integrated Plan
+    const scheduleData = [
+        {
+            date: "2025-12-15",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 1A: Chemistry for Biologists", tasks: ["1. The Chemistry of Life", "2. Carbs: Monosaccharides & Disaccharides", "3. Carbs: Polysaccharides", "4. Lipids", "5. Proteins"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-16",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 1A & 1B: Formulae & Equations", tasks: ["1A. Atoms, Elements, Molecules", "1B. Writing Chemical Equations", "1B. Reactions of Acids", "1B. Displacement & Precipitation"] },
+                { type: "physics", title: "Physics", topic: "Topic 1A: Motion", tasks: ["1. Velocity and Acceleration", "2. Motion Graphs", "3. Adding Forces", "5. Newton's Laws of Motion", "6. Kinematics Equations (Suvat)"] }
+            ]
+        },
+        {
+            date: "2025-12-17",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 1B: Mammalian Transport", tasks: ["1. Principles of Circulation", "2. Roles of the Blood", "3. Circulation in Blood Vessels", "4. The Mammalian Heart", "5. Atherosclerosis"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-18",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 1C & 1D: Calculations", tasks: ["1C. Moles & Masses", "1C. Reacting Masses", "1C. Yield & Atom Economy", "1D. Empirical & Molecular Formulae"] },
+                { type: "physics", title: "Physics", topic: "Topic 1A & 1C: Mechanics", tasks: ["1A. Moments", "1A. Resolving Vectors", "1A. Projectiles", "1C. Momentum & Conservation"] }
+            ]
+        },
+        {
+            date: "2025-12-19",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 1C: Cardiovascular Health", tasks: ["1. Risk, Correlation & Cause", "2. Investigating Causes of CVDs", "3. Risk Factors", "4. Diet & Health", "7. Benefits/Risks of Treatment"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-20",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 1E & 2A: Solutions/Atomic", tasks: ["1E. Molar Volume of Gases", "1E. Concentrations & ppm", "2A. Structure of the Atom & Isotopes"] },
+                { type: "physics", title: "Physics", topic: "Topic 1B: Energy", tasks: ["1. GPE and KE", "2. Work and Power", "Exam Practice: Mechanics of Soccer"] }
+            ]
+        },
+        {
+            date: "2025-12-21",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 2A: Membranes & Transport", tasks: ["1. Cell Membranes", "2. Transport & Diffusion", "3. Osmosis", "4. Active Transport", "5. Gas Exchange Surfaces"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-22",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 2A & 2B: Periodic Table", tasks: ["2A. Mass Spectrometry", "2A. Electronic Config & Orbitals", "2A. Ionisation Energies", "2B. Periodic Properties & Trends"] },
+                { type: "physics", title: "Physics", topic: "Topic 2A: Fluids", tasks: ["1. Fluids, Density, Upthrust", "2. Fluid Movement (Laminar/Turbulent)", "3. Viscosity", "4. Terminal Velocity"] }
+            ]
+        },
+        {
+            date: "2025-12-23",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 2B: Proteins & DNA", tasks: ["1. Enzymes", "2. How Enzymes Work", "3. Structure of DNA/RNA", "4. How DNA Works (Replication)", "5. Protein Synthesis"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-24",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 3A & 3B: Bonding", tasks: ["3A. Ionic Bonding & Radii", "3A. Physical Properties of Ionic", "3B. Covalent Bonding", "3B. Electronegativity & Polarity", "3B. Dative Covalent Bonds"] },
+                { type: "physics", title: "Physics", topic: "Topic 3A: Basic Waves", tasks: ["1. Wave Basics", "2. Wave Types (Longitudinal/Transverse)", "Exam Practice: Earthquake waves"] }
+            ]
+        },
+        {
+            date: "2025-12-25",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 2C: Gene Expression", tasks: ["1. Gene Mutation", "2. Patterns of Inheritance", "3. Sex Linkage", "4. Cystic Fibrosis", "5. Genetic Screening"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-26",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 3C, 3D, 3E: Structure", tasks: ["3C. Shapes of Molecules (VSEPR)", "3C. Non-polar/Polar Molecules", "3D. Metallic Bonding", "3E. Solid Lattices (Structure & Props)"] },
+                { type: "physics", title: "Physics", topic: "Topic 3B: Behaviour of Waves", tasks: ["1. Phase and Superposition", "2. Stationary Waves", "4. Wave Interference"] }
+            ]
+        },
+        {
+            date: "2025-12-27",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 3A: Cell Structure", tasks: ["1. Observing Cells", "2. Eukaryotic Cells (Structures)", "3. Protein Transport", "4. Prokaryotic Cells", "5. Organisation of Cells"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-28",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 4A: Intro to Organic", tasks: ["1. What is Organic Chem?", "2. Types of Formulae", "3. Functional Groups", "4. Nomenclature (Naming)", "5. Isomerism", "6. Hazards & Risks"] },
+                { type: "physics", title: "Physics", topic: "Topic 3B & 3C: Optics", tasks: ["3B. Diffraction", "3C. Refraction", "3C. Total Internal Reflection"] }
+            ]
+        },
+        {
+            date: "2025-12-29",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Topic 3B: Reproduction", tasks: ["1. The Cell Cycle", "2. Mitosis", "3. Sexual Reproduction & Meiosis", "4. Gametes Structure", "5. Fertilisation in Mammals/Plants"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2025-12-30",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 4B: Alkanes", tasks: ["1. Alkanes from Crude Oil", "2. Alkanes as Fuels", "4. Substitution Reactions (Radical Mechanism)"] },
+                { type: "physics", title: "Physics", topic: "Topic 3C & Review", tasks: ["3C. Polarisation", "Review Topic 3: Waves"] }
+            ]
+        },
+        {
+            date: "2025-12-31",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Review Topic 1", tasks: ["Review Topic 1A (Chem of Life)", "Review Topic 1B (Transport)", "Review Topic 1C (Health)", "Exam Questions: Topic 1"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2026-01-01",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 5A: Alkenes", tasks: ["1. Alkenes & Bonding", "2. Geometric Isomerism", "3. Addition Reactions", "4. Mechanisms of Addition"] },
+                { type: "physics", title: "Physics", topic: "Topic 4A: Electrical Quantities", tasks: ["1. Electric Current", "3. Current/Voltage Relationships", "4. Resistivity", "5. Conduction & Resistance", "6. Semiconductors"] }
+            ]
+        },
+        {
+            date: "2026-01-02",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Review Topic 2", tasks: ["Review Topic 2A (Membranes)", "Review Topic 2B (DNA/Protein)", "Review Topic 2C (Genetics)", "Exam Questions: Topic 2"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2026-01-03",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Topic 5B & Calc Review", tasks: ["5B. Polymerisation Reactions", "5B. Polymer Waste", "Review Topic 1 Calculations"] },
+                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 1", tasks: ["1. Series and Parallel Circuits", "2. Electrical Circuit Rules", "3. Potential Dividers"] }
+            ]
+        },
+        {
+            date: "2026-01-04",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Review Topic 3", tasks: ["Review Topic 3A (Cells)", "Review Topic 3B (Mitosis/Meiosis)", "Exam Questions: Topic 3"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+            ]
+        },
+        {
+            date: "2026-01-05",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Review Unit 1", tasks: ["Review Topic 3 (Bonding)", "Review Topic 4 (Org Intro)", "Review Topic 5 (Alkenes)"] },
+                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 2", tasks: ["4. EMF and Internal Resistance", "5. Power in Electric Circuits", "Exam Practice: Circuits"] }
+            ]
+        },
+        {
+            date: "2026-01-06",
+            subjects: [
+                { type: "biology", title: "Biology", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Weak Areas"] },
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Past Paper Attempt", "Review Mistakes"] }
+            ]
+        },
+        {
+            date: "2026-01-07",
+            subjects: [
+                { type: "chemistry", title: "Chemistry", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Mechanisms"] },
+                { type: "physics", title: "Physics", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Calculations"] }
+            ]
+        }
+    ];
+
+    // --- STATE MANAGEMENT ---
+    let currentState = JSON.parse(localStorage.getItem('studyPlanState')) || {};
+    let selectedDateStr = "";
+
+    // --- DOM ELEMENTS ---
+    const dateNav = document.getElementById('date-nav');
+    const cardsContainer = document.getElementById('cards-container');
+    const currentDateDisplay = document.getElementById('current-date-display');
+    const dayStatus = document.getElementById('day-status');
+    const globalProgressBar = document.getElementById('global-progress-bar');
+    const totalPercentDisplay = document.getElementById('total-percent');
+    const doneMessage = document.getElementById('done-message');
+
+    // --- INITIALIZATION ---
+    function init() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Find closest date in schedule to today
+        const scheduleDates = scheduleData.map(d => d.date);
+        if (scheduleDates.includes(today)) {
+            selectedDateStr = today;
+        } else {
+            // If today is before start, pick first day. If after, pick last.
+            if (today < scheduleDates[0]) selectedDateStr = scheduleDates[0];
+            else if (today > scheduleDates[scheduleDates.length - 1]) selectedDateStr = scheduleDates[scheduleDates.length - 1];
+            else selectedDateStr = scheduleDates[0]; // Fallback
+        }
+
+        renderDateNav();
+        renderDay();
+        updateGlobalProgress();
+        
+        // Scroll nav to active date
+        setTimeout(() => {
+            const activeEl = document.querySelector('.date-pill.active');
+            if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }, 100);
+    }
+
+    // --- RENDERING ---
+    function renderDateNav() {
+        dateNav.innerHTML = '';
+        scheduleData.forEach(day => {
+            const dateObj = new Date(day.date);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayNum = dateObj.getDate();
+            
+            // Check if day is fully complete
+            const dayId = day.date;
+            const totalTasks = day.subjects.reduce((acc, sub) => acc + sub.tasks.length, 0);
+            let completedTasks = 0;
+            day.subjects.forEach(sub => {
+                sub.tasks.forEach((_, index) => {
+                    if (currentState[`${dayId}-${sub.title}-${index}`]) completedTasks++;
+                });
+            });
+            const isDayDone = totalTasks > 0 && totalTasks === completedTasks;
+
+            const pill = document.createElement('div');
+            pill.className = `date-pill ${day.date === selectedDateStr ? 'active' : ''} ${isDayDone ? 'completed' : ''}`;
+            pill.innerHTML = `<span>${dayName}</span><span>${dayNum}</span>`;
+            pill.onclick = () => {
+                selectedDateStr = day.date;
+                renderDateNav(); // Re-render to update active state
+                renderDay();
+            };
+            dateNav.appendChild(pill);
+        });
+    }
+
+    function renderDay() {
+        const dayData = scheduleData.find(d => d.date === selectedDateStr);
+        if (!dayData) return;
+
+        // Update Header
+        const dateObj = new Date(dayData.date);
+        currentDateDisplay.textContent = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+        cardsContainer.innerHTML = '';
+        
+        let totalTasksForDay = 0;
+        let completedTasksForDay = 0;
+
+        dayData.subjects.forEach(subject => {
+            const card = document.createElement('div');
+            card.className = `subject-card ${subject.type}`;
+            
+            let tasksHtml = '';
+            subject.tasks.forEach((task, index) => {
+                totalTasksForDay++;
+                const taskId = `${dayData.date}-${subject.title}-${index}`;
+                const isChecked = currentState[taskId] ? 'completed' : '';
+                if(isChecked) completedTasksForDay++;
+
+                tasksHtml += `
+                    <li class="task-item ${isChecked}" onclick="toggleTask('${taskId}', this)">
+                        <div class="checkbox"></div>
+                        <span class="task-text">${task}</span>
+                    </li>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="subject-header">
+                    <div class="subject-title">
+                        ${subject.title}
+                    </div>
+                    <span class="subject-badge">2 Hours</span>
+                </div>
+                <div class="topic-name">${subject.topic}</div>
+                <ul class="task-list">
+                    ${tasksHtml}
+                </ul>
+            `;
+            cardsContainer.appendChild(card);
+        });
+
+        // Day Status Update
+        dayStatus.textContent = `${completedTasksForDay}/${totalTasksForDay} Tasks`;
+        
+        // Show/Hide Done Message
+        if (totalTasksForDay > 0 && totalTasksForDay === completedTasksForDay) {
+            doneMessage.style.display = 'block';
+        } else {
+            doneMessage.style.display = 'none';
+        }
+    }
+
+    // --- ACTIONS ---
+    function toggleTask(id, element) {
+        // Toggle state
+        if (currentState[id]) {
+            delete currentState[id];
+            element.classList.remove('completed');
+        } else {
+            currentState[id] = true;
+            element.classList.add('completed');
+            triggerConfetti(element);
+        }
+        
+        // Save
+        localStorage.setItem('studyPlanState', JSON.stringify(currentState));
+        
+        // Update UI stats
+        renderDateNav(); // To update the green pill
+        updateDayStats();
+        updateGlobalProgress();
+    }
+
+    function updateDayStats() {
+        const dayData = scheduleData.find(d => d.date === selectedDateStr);
+        let total = 0;
+        let completed = 0;
+        
+        dayData.subjects.forEach(sub => {
+            sub.tasks.forEach((_, index) => {
+                total++;
+                if (currentState[`${dayData.date}-${sub.title}-${index}`]) completed++;
+            });
+        });
+
+        dayStatus.textContent = `${completed}/${total} Tasks`;
+        
+        if (total > 0 && total === completed) {
+            doneMessage.style.display = 'block';
+        } else {
+            doneMessage.style.display = 'none';
+        }
+    }
+
+    function updateGlobalProgress() {
+        let globalTotal = 0;
+        let globalCompleted = 0;
+
+        scheduleData.forEach(day => {
+            day.subjects.forEach(sub => {
+                sub.tasks.forEach((_, index) => {
+                    globalTotal++;
+                    if (currentState[`${day.date}-${sub.title}-${index}`]) globalCompleted++;
+                });
+            });
+        });
+
+        const percent = globalTotal === 0 ? 0 : Math.round((globalCompleted / globalTotal) * 100);
+        globalProgressBar.style.width = `${percent}%`;
+        totalPercentDisplay.textContent = `${percent}%`;
+    }
+
+    function triggerConfetti(element) {
+        // Simple scale effect for feedback
+        element.style.transform = "scale(0.98)";
+        setTimeout(() => element.style.transform = "scale(1)", 150);
+    }
+
+    // Run
+    init();
+
+</script>
+</body>
+</html>
