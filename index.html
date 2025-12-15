@@ -48,6 +48,7 @@
 
         h1 { margin: 0; font-size: 22px; font-weight: 700; }
         .overall-progress { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+        .sync-status { font-size: 10px; color: var(--accent-blue); margin-top: 4px; }
 
         /* Date Navigation */
         .date-nav {
@@ -234,14 +235,16 @@
             width: 0%;
             transition: width 0.3s ease;
         }
-
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-content">
-        <h1>Study Plan 2025/26</h1>
+        <div>
+            <h1>Study Plan 2025/26</h1>
+            <div class="sync-status" id="sync-status">Connecting to Cloud...</div>
+        </div>
         <div class="overall-progress">
             <span id="total-percent">0%</span> Complete
         </div>
@@ -251,14 +254,12 @@
     </div>
 </header>
 
-<div class="date-nav" id="date-nav">
-    <!-- Generated via JS -->
-</div>
+<div class="date-nav" id="date-nav"></div>
 
 <div class="container">
     <div class="day-header">
         <h2 id="current-date-display">December 15</h2>
-        <span class="day-status" id="day-status">0/2 Completed</span>
+        <span class="day-status" id="day-status">0/0 Completed</span>
     </div>
 
     <div id="cards-container">
@@ -271,9 +272,31 @@
     </div>
 </div>
 
-<script>
-    // --- DATA ---
-    // The Integrated Plan
+<!-- FIREBASE SCRIPTS -->
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    // We use the CDN links here so it works directly in the browser
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // --- YOUR CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1peBFo8jkhdnMEhDb-1HS4eVmbkl8eYA",
+      authDomain: "study-tracket.firebaseapp.com",
+      projectId: "study-tracket",
+      storageBucket: "study-tracket.firebasestorage.app",
+      messagingSenderId: "667043006914",
+      appId: "1:667043006914:web:e348078f05f30b4afb6e5b",
+      // I added this line based on your project ID so the database works:
+      databaseURL: "https://study-tracket-default-rtdb.firebaseio.com" 
+    };
+    // ---------------------------------------
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- DATA (THE PLAN) ---
     const scheduleData = [
         {
             date: "2025-12-15",
@@ -446,7 +469,7 @@
     ];
 
     // --- STATE MANAGEMENT ---
-    let currentState = JSON.parse(localStorage.getItem('studyPlanState')) || {};
+    let currentState = {};
     let selectedDateStr = "";
 
     // --- DOM ELEMENTS ---
@@ -457,27 +480,40 @@
     const globalProgressBar = document.getElementById('global-progress-bar');
     const totalPercentDisplay = document.getElementById('total-percent');
     const doneMessage = document.getElementById('done-message');
+    const syncStatus = document.getElementById('sync-status');
+
+    // --- FIREBASE SYNC LISTENER ---
+    // This is the magic part that makes it sync
+    const progressRef = ref(db, 'study_progress');
+    
+    onValue(progressRef, (snapshot) => {
+        const data = snapshot.val();
+        currentState = data || {};
+        
+        syncStatus.textContent = "Synced with Cloud ✓";
+        
+        // Refresh UI
+        renderDateNav();
+        renderDay();
+        updateGlobalProgress();
+    });
 
     // --- INITIALIZATION ---
     function init() {
         const today = new Date().toISOString().split('T')[0];
         
-        // Find closest date in schedule to today
         const scheduleDates = scheduleData.map(d => d.date);
         if (scheduleDates.includes(today)) {
             selectedDateStr = today;
         } else {
-            // If today is before start, pick first day. If after, pick last.
             if (today < scheduleDates[0]) selectedDateStr = scheduleDates[0];
             else if (today > scheduleDates[scheduleDates.length - 1]) selectedDateStr = scheduleDates[scheduleDates.length - 1];
-            else selectedDateStr = scheduleDates[0]; // Fallback
+            else selectedDateStr = scheduleDates[0];
         }
 
         renderDateNav();
         renderDay();
-        updateGlobalProgress();
         
-        // Scroll nav to active date
         setTimeout(() => {
             const activeEl = document.querySelector('.date-pill.active');
             if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
@@ -492,7 +528,6 @@
             const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
             const dayNum = dateObj.getDate();
             
-            // Check if day is fully complete
             const dayId = day.date;
             const totalTasks = day.subjects.reduce((acc, sub) => acc + sub.tasks.length, 0);
             let completedTasks = 0;
@@ -506,11 +541,14 @@
             const pill = document.createElement('div');
             pill.className = `date-pill ${day.date === selectedDateStr ? 'active' : ''} ${isDayDone ? 'completed' : ''}`;
             pill.innerHTML = `<span>${dayName}</span><span>${dayNum}</span>`;
-            pill.onclick = () => {
+            
+            // Assign onclick to window scope logic wrapper
+            pill.addEventListener('click', () => {
                 selectedDateStr = day.date;
-                renderDateNav(); // Re-render to update active state
+                renderDateNav();
                 renderDay();
-            };
+            });
+            
             dateNav.appendChild(pill);
         });
     }
@@ -519,7 +557,6 @@
         const dayData = scheduleData.find(d => d.date === selectedDateStr);
         if (!dayData) return;
 
-        // Update Header
         const dateObj = new Date(dayData.date);
         currentDateDisplay.textContent = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -540,7 +577,7 @@
                 if(isChecked) completedTasksForDay++;
 
                 tasksHtml += `
-                    <li class="task-item ${isChecked}" onclick="toggleTask('${taskId}', this)">
+                    <li class="task-item ${isChecked}" id="task-${taskId}">
                         <div class="checkbox"></div>
                         <span class="task-text">${task}</span>
                     </li>
@@ -549,9 +586,7 @@
 
             card.innerHTML = `
                 <div class="subject-header">
-                    <div class="subject-title">
-                        ${subject.title}
-                    </div>
+                    <div class="subject-title">${subject.title}</div>
                     <span class="subject-badge">2 Hours</span>
                 </div>
                 <div class="topic-name">${subject.topic}</div>
@@ -559,13 +594,19 @@
                     ${tasksHtml}
                 </ul>
             `;
+            
+            // Add event listeners after adding to DOM
+            const taskItems = card.querySelectorAll('.task-item');
+            taskItems.forEach((item, idx) => {
+                const taskId = `${dayData.date}-${subject.title}-${idx}`;
+                item.addEventListener('click', () => toggleTask(taskId));
+            });
+
             cardsContainer.appendChild(card);
         });
 
-        // Day Status Update
         dayStatus.textContent = `${completedTasksForDay}/${totalTasksForDay} Tasks`;
         
-        // Show/Hide Done Message
         if (totalTasksForDay > 0 && totalTasksForDay === completedTasksForDay) {
             doneMessage.style.display = 'block';
         } else {
@@ -574,45 +615,25 @@
     }
 
     // --- ACTIONS ---
-    function toggleTask(id, element) {
-        // Toggle state
-        if (currentState[id]) {
-            delete currentState[id];
-            element.classList.remove('completed');
-        } else {
-            currentState[id] = true;
-            element.classList.add('completed');
-            triggerConfetti(element);
+    function toggleTask(id) {
+        const isComplete = !currentState[id]; // Toggle value
+        
+        // Optimistic UI Update
+        const el = document.getElementById(`task-${id}`);
+        if(el) {
+            if(isComplete) {
+                el.classList.add('completed');
+                el.style.transform = "scale(0.98)";
+                setTimeout(() => el.style.transform = "scale(1)", 150);
+            } else {
+                el.classList.remove('completed');
+            }
         }
-        
-        // Save
-        localStorage.setItem('studyPlanState', JSON.stringify(currentState));
-        
-        // Update UI stats
-        renderDateNav(); // To update the green pill
-        updateDayStats();
-        updateGlobalProgress();
-    }
 
-    function updateDayStats() {
-        const dayData = scheduleData.find(d => d.date === selectedDateStr);
-        let total = 0;
-        let completed = 0;
-        
-        dayData.subjects.forEach(sub => {
-            sub.tasks.forEach((_, index) => {
-                total++;
-                if (currentState[`${dayData.date}-${sub.title}-${index}`]) completed++;
-            });
-        });
-
-        dayStatus.textContent = `${completed}/${total} Tasks`;
-        
-        if (total > 0 && total === completed) {
-            doneMessage.style.display = 'block';
-        } else {
-            doneMessage.style.display = 'none';
-        }
+        // Send to Firebase
+        const updates = {};
+        updates['study_progress/' + id] = isComplete ? true : null;
+        update(ref(db), updates);
     }
 
     function updateGlobalProgress() {
@@ -631,12 +652,6 @@
         const percent = globalTotal === 0 ? 0 : Math.round((globalCompleted / globalTotal) * 100);
         globalProgressBar.style.width = `${percent}%`;
         totalPercentDisplay.textContent = `${percent}%`;
-    }
-
-    function triggerConfetti(element) {
-        // Simple scale effect for feedback
-        element.style.transform = "scale(0.98)";
-        setTimeout(() => element.style.transform = "scale(1)", 150);
     }
 
     // Run
