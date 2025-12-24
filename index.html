@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>A-Level Study Tracker</title>
+    <title>A-Level & EPQ Planner</title>
     <style>
         :root {
             --bg-color: #F2F2F7;
@@ -15,6 +15,7 @@
             --chem-color: #FF9500;
             --phys-color: #5856D6;
             --math-color: #FF2D55;
+            --epq-color: #9C27B0; /* Added Purple for EPQ */
             --border-radius: 16px;
             --shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
@@ -119,6 +120,7 @@
         .subject-card.chemistry { border-left-color: var(--chem-color); }
         .subject-card.physics { border-left-color: var(--phys-color); }
         .subject-card.maths { border-left-color: var(--math-color); }
+        .subject-card.epq { border-left-color: var(--epq-color); }
 
         .subject-header {
             display: flex;
@@ -146,6 +148,7 @@
         .chemistry .subject-badge { background: var(--chem-color); }
         .physics .subject-badge { background: var(--phys-color); }
         .maths .subject-badge { background: var(--math-color); }
+        .epq .subject-badge { background: var(--epq-color); }
 
         .topic-name {
             font-size: 15px;
@@ -275,7 +278,6 @@
 <!-- FIREBASE SCRIPTS -->
 <script type="module">
     // Import the functions you need from the SDKs you need
-    // We use the CDN links here so it works directly in the browser
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -287,7 +289,6 @@
       storageBucket: "study-tracket.firebasestorage.app",
       messagingSenderId: "667043006914",
       appId: "1:667043006914:web:e348078f05f30b4afb6e5b",
-      // I added this line based on your project ID so the database works:
       databaseURL: "https://study-tracket-default-rtdb.firebaseio.com" 
     };
     // ---------------------------------------
@@ -365,98 +366,112 @@
             date: "2025-12-24",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 3A & 3B: Bonding", tasks: ["3A. Ionic Bonding & Radii", "3A. Physical Properties of Ionic", "3B. Covalent Bonding", "3B. Electronegativity & Polarity", "3B. Dative Covalent Bonds"] },
-                { type: "physics", title: "Physics", topic: "Topic 3A: Basic Waves", tasks: ["1. Wave Basics", "2. Wave Types (Longitudinal/Transverse)", "Exam Practice: Earthquake waves"] }
+                { type: "physics", title: "Physics", topic: "Topic 3A: Basic Waves", tasks: ["1. Wave Basics", "2. Wave Types (Longitudinal/Transverse)", "Exam Practice: Earthquake waves"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 2: The Intricacies of CHF", tasks: ["2.1 Write: Biology of Heart Failure (500 words)", "Detail ventricular remodelling", "Detail neurohormonal activation"] }
             ]
         },
         {
             date: "2025-12-25",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Topic 2C: Gene Expression", tasks: ["1. Gene Mutation", "2. Patterns of Inheritance", "3. Sex Linkage", "4. Cystic Fibrosis", "5. Genetic Screening"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 2: Diagnostics", tasks: ["2.2 Write: Current Tools & Flaws (500 words)", "Critique Echo/MRI/ECG limitations", "Finish Chapter 2"] }
             ]
         },
         {
             date: "2025-12-26",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 3C, 3D, 3E: Structure", tasks: ["3C. Shapes of Molecules (VSEPR)", "3C. Non-polar/Polar Molecules", "3D. Metallic Bonding", "3E. Solid Lattices (Structure & Props)"] },
-                { type: "physics", title: "Physics", topic: "Topic 3B: Behaviour of Waves", tasks: ["1. Phase and Superposition", "2. Stationary Waves", "4. Wave Interference"] }
+                { type: "physics", title: "Physics", topic: "Topic 3B: Behaviour of Waves", tasks: ["1. Phase and Superposition", "2. Stationary Waves", "4. Wave Interference"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 3: The Digital Heart", tasks: ["3.1 Write: Digital Twin vs 3D Model", "3.2 Write: Data Req (Structure/Function/Molecular)", "Word Count Target: 600 words"] }
             ]
         },
         {
             date: "2025-12-27",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Topic 3A: Cell Structure", tasks: ["1. Observing Cells", "2. Eukaryotic Cells (Structures)", "3. Protein Transport", "4. Prokaryotic Cells", "5. Organisation of Cells"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 3: Simulation", tasks: ["3.3 Write: Physics models & ML integration", "Explain how the twin is built", "Finish Chapter 3 (600 words)"] }
             ]
         },
         {
             date: "2025-12-28",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 4A: Intro to Organic", tasks: ["1. What is Organic Chem?", "2. Types of Formulae", "3. Functional Groups", "4. Nomenclature (Naming)", "5. Isomerism", "6. Hazards & Risks"] },
-                { type: "physics", title: "Physics", topic: "Topic 3B & 3C: Optics", tasks: ["3B. Diffraction", "3C. Refraction", "3C. Total Internal Reflection"] }
+                { type: "physics", title: "Physics", topic: "Topic 3B & 3C: Optics", tasks: ["3B. Diffraction", "3C. Refraction", "3C. Total Internal Reflection"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Improvements", tasks: ["4.1 Write: Diagnosis to Prognosis", "Explain risk assessment benefits", "Target: 500 words"] }
             ]
         },
         {
             date: "2025-12-29",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Topic 3B: Reproduction", tasks: ["1. The Cell Cycle", "2. Mitosis", "3. Sexual Reproduction & Meiosis", "4. Gametes Structure", "5. Fertilisation in Mammals/Plants"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Pharma", tasks: ["4.2 Write: Personalising Pharmacotherapy", "Simulating drug effects (Beta-blockers)", "Target: 500 words"] }
             ]
         },
         {
             date: "2025-12-30",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 4B: Alkanes", tasks: ["1. Alkanes from Crude Oil", "2. Alkanes as Fuels", "4. Substitution Reactions (Radical Mechanism)"] },
-                { type: "physics", title: "Physics", topic: "Topic 3C & Review", tasks: ["3C. Polarisation", "Review Topic 3: Waves"] }
+                { type: "physics", title: "Physics", topic: "Topic 3C & Review", tasks: ["3C. Polarisation", "Review Topic 3: Waves"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Surgery", tasks: ["4.3 Write: Reducing Surgical Risk", "Simulating haemodynamics", "Finish Chapter 4 (500 words)"] }
             ]
         },
         {
             date: "2025-12-31",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Review Topic 1", tasks: ["Review Topic 1A (Chem of Life)", "Review Topic 1B (Transport)", "Review Topic 1C (Health)", "Exam Questions: Topic 1"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Review Phase 1", tasks: ["Read through Chapters 2, 3, & 4", "Check flow and referencing", "Catch up on word count if behind"] }
             ]
         },
         {
             date: "2026-01-01",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 5A: Alkenes", tasks: ["1. Alkenes & Bonding", "2. Geometric Isomerism", "3. Addition Reactions", "4. Mechanisms of Addition"] },
-                { type: "physics", title: "Physics", topic: "Topic 4A: Electrical Quantities", tasks: ["1. Electric Current", "3. Current/Voltage Relationships", "4. Resistivity", "5. Conduction & Resistance", "6. Semiconductors"] }
+                { type: "physics", title: "Physics", topic: "Topic 4A: Electrical Quantities", tasks: ["1. Electric Current", "3. Current/Voltage Relationships", "4. Resistivity", "5. Conduction & Resistance", "6. Semiconductors"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 5: Barriers", tasks: ["5.1 Write: Tech/Logistical Challenges", "5.2 Write: FDA/Regulatory Issues", "5.3 Write: Ethical Concerns", "Finish Chapter 5 (600 words)"] }
             ]
         },
         {
             date: "2026-01-02",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Review Topic 2", tasks: ["Review Topic 2A (Membranes)", "Review Topic 2B (DNA/Protein)", "Review Topic 2C (Genetics)", "Exam Questions: Topic 2"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 6: Conclusion", tasks: ["6.1 Write: Final Judgement", "6.2 Write: Future Vision", "Finish Chapter 6 (400 words)"] }
             ]
         },
         {
             date: "2026-01-03",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Topic 5B & Calc Review", tasks: ["5B. Polymerisation Reactions", "5B. Polymer Waste", "Review Topic 1 Calculations"] },
-                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 1", tasks: ["1. Series and Parallel Circuits", "2. Electrical Circuit Rules", "3. Potential Dividers"] }
+                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 1", tasks: ["1. Series and Parallel Circuits", "2. Electrical Circuit Rules", "3. Potential Dividers"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Front Matter", tasks: ["Write Abstract", "Compile Bibliography/Citations", "Create Title Page"] }
             ]
         },
         {
             date: "2026-01-04",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Review Topic 3", tasks: ["Review Topic 3A (Cells)", "Review Topic 3B (Mitosis/Meiosis)", "Exam Questions: Topic 3"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Editing", tasks: ["Full read-through", "Check spelling/grammar", "Format headers and layout"] }
             ]
         },
         {
             date: "2026-01-05",
             subjects: [
                 { type: "chemistry", title: "Chemistry", topic: "Review Unit 1", tasks: ["Review Topic 3 (Bonding)", "Review Topic 4 (Org Intro)", "Review Topic 5 (Alkenes)"] },
-                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 2", tasks: ["4. EMF and Internal Resistance", "5. Power in Electric Circuits", "Exam Practice: Circuits"] }
+                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 2", tasks: ["4. EMF and Internal Resistance", "5. Power in Electric Circuits", "Exam Practice: Circuits"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Final Polish", tasks: ["Final formatting check", "Prepare submission file", "Check appendices (if any)"] }
             ]
         },
         {
             date: "2026-01-06",
             subjects: [
                 { type: "biology", title: "Biology", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Weak Areas"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Past Paper Attempt", "Review Mistakes"] }
+                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Past Paper Attempt", "Review Mistakes"] },
+                { type: "epq", title: "EPQ Dissertation", topic: "Submission Day", tasks: ["Submit Dissertation", "Celebrate!"] }
             ]
         },
         {
@@ -483,7 +498,6 @@
     const syncStatus = document.getElementById('sync-status');
 
     // --- FIREBASE SYNC LISTENER ---
-    // This is the magic part that makes it sync
     const progressRef = ref(db, 'study_progress');
     
     onValue(progressRef, (snapshot) => {
@@ -542,7 +556,6 @@
             pill.className = `date-pill ${day.date === selectedDateStr ? 'active' : ''} ${isDayDone ? 'completed' : ''}`;
             pill.innerHTML = `<span>${dayName}</span><span>${dayNum}</span>`;
             
-            // Assign onclick to window scope logic wrapper
             pill.addEventListener('click', () => {
                 selectedDateStr = day.date;
                 renderDateNav();
@@ -584,10 +597,13 @@
                 `;
             });
 
+            // Adjusted badge logic for EPQ
+            const timeEstimate = subject.type === 'epq' ? '1.5 Hours' : '2 Hours';
+
             card.innerHTML = `
                 <div class="subject-header">
                     <div class="subject-title">${subject.title}</div>
-                    <span class="subject-badge">2 Hours</span>
+                    <span class="subject-badge">${timeEstimate}</span>
                 </div>
                 <div class="topic-name">${subject.topic}</div>
                 <ul class="task-list">
@@ -595,7 +611,6 @@
                 </ul>
             `;
             
-            // Add event listeners after adding to DOM
             const taskItems = card.querySelectorAll('.task-item');
             taskItems.forEach((item, idx) => {
                 const taskId = `${dayData.date}-${subject.title}-${idx}`;
