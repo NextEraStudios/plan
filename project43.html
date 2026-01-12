@@ -5,20 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project 43</title>
     
-    <!-- Design System: Apple Aesthetics -->
     <style>
         :root {
             --bg-color: #fbfbfd;
             --card-bg: #ffffff;
             --text-primary: #1d1d1f;
             --text-secondary: #86868b;
-            --accent: #0071e3; /* Apple Blue */
-            --accent-hover: #0077ed;
+            --accent: #0071e3;
             --divider: #d2d2d7;
-            --success: #34c759;
-            --glass: rgba(255, 255, 255, 0.8);
-            --shadow-sm: 0 4px 6px rgba(0,0,0,0.02);
-            --shadow-lg: 0 20px 40px rgba(0,0,0,0.06);
+            --glass: rgba(255, 255, 255, 0.85);
+            --shadow-lg: 0 12px 30px rgba(0,0,0,0.06);
             --radius: 20px;
             --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -30,11 +26,11 @@
             color: var(--text-primary);
             font-family: var(--font-stack);
             margin: 0;
-            padding-bottom: 60px;
+            padding-bottom: 80px;
             overflow-x: hidden;
         }
 
-        /* --- Header & Progress --- */
+        /* --- Header --- */
         header {
             position: sticky;
             top: 0;
@@ -44,11 +40,10 @@
             -webkit-backdrop-filter: saturate(180%) blur(20px);
             border-bottom: 1px solid rgba(0,0,0,0.05);
             padding: 16px 0;
-            transition: all 0.3s ease;
         }
 
         .container {
-            max-width: 980px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 0 24px;
         }
@@ -57,33 +52,32 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: -0.02em;
-        }
-
+        h1 { font-size: 22px; font-weight: 600; margin: 0; }
+        
         .days-left {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             font-weight: 500;
+            background: rgba(0,0,0,0.05);
+            padding: 4px 10px;
+            border-radius: 12px;
         }
 
-        .progress-container {
+        /* --- Progress Bar --- */
+        .progress-track {
             width: 100%;
             height: 6px;
-            background: rgba(0,0,0,0.05);
+            background: rgba(0,0,0,0.06);
             border-radius: 10px;
             overflow: hidden;
         }
 
-        .progress-bar {
+        .progress-fill {
             height: 100%;
-            background: var(--text-primary);
+            background: #1d1d1f;
             width: 0%;
             transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -92,32 +86,33 @@
         .date-scroller {
             display: flex;
             overflow-x: auto;
-            gap: 12px;
+            gap: 10px;
             padding: 12px 24px;
-            scrollbar-width: none; /* Firefox */
-            margin-top: 10px;
+            scrollbar-width: none;
+            margin-top: 5px;
             scroll-behavior: smooth;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
         }
         .date-scroller::-webkit-scrollbar { display: none; }
 
         .date-chip {
-            min-width: 70px;
-            padding: 12px 0;
-            border-radius: 14px;
+            min-width: 65px;
+            padding: 10px 0;
+            border-radius: 12px;
             background: white;
             color: var(--text-secondary);
             text-align: center;
             cursor: pointer;
-            border: 1px solid transparent;
             transition: all 0.2s ease;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             flex-shrink: 0;
+            user-select: none;
         }
 
         .date-chip span {
             display: block;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             color: var(--text-primary);
             margin-top: 2px;
@@ -126,156 +121,115 @@
         .date-chip.active {
             background: var(--text-primary);
             color: rgba(255,255,255,0.8);
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         .date-chip.active span { color: white; }
-        .date-chip:hover:not(.active) { transform: scale(1.02); background: #f5f5f7; }
+        .date-chip.rest-day-marker { color: #34c759; } 
 
         /* --- Main Content --- */
-        main {
-            padding-top: 40px;
-            min-height: 60vh;
-        }
+        main { padding-top: 30px; }
 
-        .hero-text {
+        .hero-section {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease;
         }
-        .hero-text h2 {
-            font-size: 40px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin: 0 0 10px 0;
-        }
-        .hero-text p {
-            font-size: 19px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        .hero-section h2 { font-size: 34px; margin: 0 0 8px 0; letter-spacing: -0.02em; }
+        .hero-section p { font-size: 17px; color: var(--text-secondary); margin: 0; }
 
-        .schedule-card {
+        .card {
             background: var(--card-bg);
             border-radius: var(--radius);
-            padding: 40px;
+            padding: 30px;
             box-shadow: var(--shadow-lg);
-            margin-bottom: 40px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            margin-bottom: 30px;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .subject-group {
-            margin-bottom: 40px;
+        /* --- Rest Day Styles --- */
+        .rest-mode {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
         }
-        .subject-group:last-child { margin-bottom: 0; }
+        .rest-icon { font-size: 40px; margin-bottom: 20px; display: block; }
+        .rest-title { font-size: 28px; font-weight: 700; color: #007d91; margin-bottom: 10px; }
+        .rest-desc { color: #5a7d85; font-size: 18px; line-height: 1.5; }
 
+        /* --- List Styles --- */
+        .subject-row { margin-bottom: 25px; }
+        .subject-row:last-child { margin-bottom: 0; }
+        
         .subject-header {
             display: flex;
-            align-items: baseline;
             justify-content: space-between;
-            margin-bottom: 20px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--divider);
-            padding-bottom: 12px;
-        }
-
-        .subject-title {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
         }
         
-        .subject-title .unit-badge {
-            font-size: 14px;
-            background: #f5f5f7;
-            color: var(--text-secondary);
+        .sub-name { font-size: 20px; font-weight: 600; }
+        .paper-tag {
+            background: #000;
+            color: #fff;
             padding: 4px 10px;
-            border-radius: 20px;
-            margin-left: 10px;
-            vertical-align: middle;
-            font-weight: 500;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
-        .time-est {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* --- Checklist --- */
         .checklist-item {
             display: flex;
-            align-items: flex-start;
-            padding: 12px 0;
+            align-items: center;
+            padding: 10px 0;
             cursor: pointer;
-            group;
+            transition: opacity 0.2s;
         }
+        .checklist-item:hover { opacity: 0.8; }
 
         .checkbox {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #d1d1d6;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #d2d2d7;
             border-radius: 50%;
-            margin-right: 16px;
-            flex-shrink: 0;
+            margin-right: 15px;
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .checklist-item.checked .checkbox {
             background: var(--accent);
             border-color: var(--accent);
+            transform: scale(1.1);
         }
 
         .checklist-item.checked .checkbox::after {
             content: '';
             position: absolute;
-            top: 6px;
-            left: 5px;
-            width: 10px;
-            height: 5px;
-            border-left: 2px solid white;
-            border-bottom: 2px solid white;
+            top: 5px; left: 4px; width: 10px; height: 5px;
+            border-left: 2px solid white; border-bottom: 2px solid white;
             transform: rotate(-45deg);
         }
 
-        .item-text {
-            font-size: 17px;
-            line-height: 1.5;
-            color: var(--text-primary);
-            transition: color 0.3s ease;
-        }
-
-        .checklist-item.checked .item-text {
+        .checklist-item.checked .text {
             color: var(--text-secondary);
             text-decoration: line-through;
         }
+        
+        .text { font-size: 16px; line-height: 1.4; color: var(--text-primary); transition: color 0.2s; }
 
-        /* --- Past Paper Mode Styles --- */
-        .past-paper-mode .subject-title { color: var(--text-primary); }
-        .past-paper-badge {
-            background: #FF2D55; /* Apple Pink */
-            color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
+        /* --- Footer --- */
+        .firebase-status {
+            text-align: center;
             font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 20px;
-            display: inline-block;
-        }
-
-        /* --- Mobile Responsive --- */
-        @media (max-width: 768px) {
-            .hero-text h2 { font-size: 32px; }
-            .schedule-card { padding: 24px; }
-            .subject-title { font-size: 20px; }
-            .item-text { font-size: 16px; }
+            color: #ccc;
+            padding-top: 20px;
         }
     </style>
 </head>
@@ -287,27 +241,24 @@
             <h1>Project 43</h1>
             <div class="days-left" id="daysLeftDisplay">Loading...</div>
         </div>
-        <div class="progress-container">
-            <div class="progress-bar" id="overallProgressBar"></div>
+        <div class="progress-track">
+            <div class="progress-fill" id="overallProgressBar"></div>
         </div>
     </div>
-    <div class="date-scroller" id="dateScroller">
-        <!-- JS will populate dates -->
-    </div>
+    <div class="date-scroller" id="dateScroller"></div>
 </header>
 
 <main class="container">
-    <div class="hero-text">
+    <div class="hero-section">
         <h2 id="currentDateTitle">Today</h2>
-        <p id="currentFocusSubtitle">Focus on the process.</p>
+        <p id="currentFocusSubtitle">Focus.</p>
     </div>
 
-    <div id="scheduleContent">
-        <!-- JS will populate daily cards -->
-    </div>
+    <div id="scheduleContent"></div>
+    <div class="firebase-status" id="dbStatus">Syncing with cloud...</div>
 </main>
 
-<!-- Firebase Logic & App Logic -->
+<!-- Firebase SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -325,298 +276,277 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- User Identification ---
-    // Simple local storage ID to simulate user session without full auth login screen
+    // --- State & User ---
     let userId = localStorage.getItem('p43_user_id');
     if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        userId = 'student_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('p43_user_id', userId);
     }
-
-    // --- Syllabus Data (Extracted from Images) ---
-    const syllabus = {
-        maths: [
-            "P2: Ch1 Algebraic Methods", "P2: Ch2 Coordinate Geometry", "P2: Ch3 Exponentials & Logarithms", "P2: Ch4 Binomial Expansion",
-            "P2: Ch5 Sequences & Series", "P2: Ch6 Trig Identities", "P2: Ch7 Differentiation", "P2: Ch8 Integration",
-            "S1: Ch1 Math Modelling", "S1: Ch2 Measures of Location", "S1: Ch3 Representations of Data", "S1: Ch4 Probability",
-            "S1: Ch5 Correlation & Regression"
-        ],
-        physics: [
-            "U1: Topic 1 Mechanics (Motion)", "U1: Topic 1 Mechanics (Energy/Mom)", "U1: Topic 2 Materials (Fluids)", "U1: Topic 2 Materials (Solids)",
-            "U2: Topic 3 Waves (Basic)", "U2: Topic 3 Waves (Behaviour/Light)", "U2: Topic 4 Electricity (Circuits)", "U2: Topic 4 Electricity (Resistance)",
-            "U3: Practical Skills Review (Units/Errors)", "U3: Experimental Methods (Mech/Elec)"
-        ],
-        biology: [
-            "U1: 1A Chemistry for Biologists", "U1: 1B Mammalian Transport", "U1: 1C Cardiovascular Health",
-            "U2: 2A Membranes & Transport", "U2: 2B Proteins & DNA", "U2: 2C Gene Expression & Genetics",
-            "U3: Practical Biology Skills", "U3: Core Practicals Review"
-        ],
-        chemistry: [
-            "U1: Topic 1 Formulae & Equations", "U1: Topic 2 Atomic Structure", "U1: Topic 3 Bonding", "U1: Topic 4 Intro to Organic", "U1: Topic 5 Alkenes",
-            "U2: Topic 6 Energetics", "U2: Topic 7 Intermolecular Forces", "U2: Topic 8 Redox & Groups 1,2,7", "U2: Topic 9 Kinetics/Equilibria", "U2: Topic 10 Organic (Alcohols/Spectra)",
-            "U3: Practical Chemistry Skills"
-        ]
-    };
-
-    // --- Schedule Generation ---
-    const startDate = new Date("2026-01-12");
-    const mockDate = new Date("2026-02-24");
-    const pastPaperStartDate = new Date("2026-02-14");
     
-    // Helper to format dates
-    const formatDate = (d) => {
-        const months = ["Jan", "Feb", "Mar"];
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return {
-            dayName: days[d.getDay()],
-            dayNum: d.getDate(),
-            month: months[d.getMonth()],
-            full: d.toISOString().split('T')[0]
-        };
+    let completedItems = {}; 
+    let selectedDayIndex = 0;
+    const mockStartDate = new Date("2026-02-24");
+
+    // --- Syllabus Content ---
+    const syllabus = {
+        maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
+        physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
+        biology: [ "Chemistry of Life", "Mammalian Transport", "CVD Health", "Membranes", "Proteins & DNA", "Genetics", "Stem Cells", "Practical Bio" ],
+        chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
     };
 
-    // Generate 43 Days
+    // --- Past Paper Rotation (Feb 14 - Feb 22) ---
+    // Covering: Physics (U1, U2, U3), Bio (U1, U2, U3), Chem (U1, U2, U3), Maths (P2, S1)
+    const pastPaperSchedule = [
+        /* Day 33 (Feb 14) */ { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
+        /* Day 34 (Feb 15) */ { papers: ["Biology U1", "Maths S1", "Physics U2"] },
+        /* Day 35 (Feb 16) */ { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
+        /* Day 36 (Feb 17) */ { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
+        /* Day 37 (Feb 18) */ { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
+        /* Day 38 (Feb 19) */ { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
+        /* Day 39 (Feb 20) */ { papers: ["Biology U2", "Physics U3", "Maths P2"] },
+        /* Day 40 (Feb 21) */ { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
+        /* Day 41 (Feb 22) */ { papers: ["Maths S1", "Chemistry U2", "Physics U2"] } // Finishing with heavy hitters
+    ];
+
+    // --- Schedule Generator ---
     const schedule = [];
-    const totalDays = 43;
+    const startDate = new Date("2026-01-12");
+    
+    let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
 
-    // Iterators for syllabus content
-    let mIdx = 0, pIdx = 0, bIdx = 0, cIdx = 0;
-
-    for (let i = 0; i < totalDays; i++) {
+    for (let i = 0; i < 43; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
-        const fDate = formatDate(currentDate);
         
-        const isPastPaperPhase = currentDate >= pastPaperStartDate;
+        const dateString = currentDate.toDateString();
+        const dayOfMonth = currentDate.getDate();
+        const month = currentDate.toLocaleString('default', { month: 'short' });
         
-        let subjects = [];
+        let dayData = {
+            id: i,
+            dateObj: currentDate,
+            displayDate: { month, day: dayOfMonth, name: currentDate.toLocaleString('default', { weekday: 'short' }) },
+            type: 'revision', // revision, exam, rest
+            subjects: []
+        };
 
-        if (isPastPaperPhase) {
-            // Last 10 days: Past Papers
-            subjects = [
-                { name: "Past Paper Session 1", unit: "Mixed", items: ["Complete full paper under timed conditions", "Mark paper strictly", "Review mistakes"] },
-                { name: "Past Paper Session 2", unit: "Mixed", items: ["Complete full paper under timed conditions", "Mark paper strictly", "Review mistakes"] },
-                { name: "Past Paper Session 3", unit: "Mixed", items: ["Complete full paper under timed conditions", "Mark paper strictly", "Review mistakes"] }
-            ];
-        } else {
-            // Study Phase: Alternating Days
-            // Even days (0, 2...): Maths & Physics
-            // Odd days (1, 3...): Biology & Chemistry
+        // Date Logic
+        if (i === 42) { 
+            // Feb 23: Rest Day
+            dayData.type = 'rest';
+        } else if (i >= 33) {
+            // Feb 14 - Feb 22: Past Papers
+            dayData.type = 'exam';
+            const paperSet = pastPaperSchedule[i - 33];
             
+            paperSet.papers.forEach(paperName => {
+                dayData.subjects.push({
+                    title: paperName,
+                    tag: "PAST PAPER",
+                    tasks: [
+                        "Complete paper (Timed condition)",
+                        "Mark strictly using Mark Scheme",
+                        "Review errors & update flashcards"
+                    ]
+                });
+            });
+
+        } else {
+            // Jan 12 - Feb 13: Revision
             if (i % 2 === 0) {
                 // Maths & Physics
-                const mTopic = syllabus.maths[mIdx % syllabus.maths.length];
-                const pTopic = syllabus.physics[pIdx % syllabus.physics.length];
-                
-                // Advance indices slowly to cover everything by Feb 13 (approx 32 days / 2 = 16 slots)
-                // We have ~13 Maths topics and ~10 Phys topics. 
-                if(i < 32) { mIdx++; pIdx++; }
-
-                subjects.push({
-                    name: "Mathematics",
-                    unit: mTopic.split(':')[0],
-                    items: [`Topic Questions: ${mTopic.split(':')[1]}`, "Review hard concepts", "Update formula sheet"]
+                dayData.subjects.push({
+                    title: "Mathematics",
+                    tag: "P2 / S1",
+                    tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Do 10 hard exam questions", "Review formula derivations"]
                 });
-                subjects.push({
-                    name: "Physics",
-                    unit: pTopic.split(':')[0],
-                    items: [`Topic Questions: ${pTopic.split(':')[1]}`, "Review definitions", "Practice calculation layout"]
+                dayData.subjects.push({
+                    title: "Physics",
+                    tag: "IAL Unit 1/2/3",
+                    tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Define key terms", "Practice calculation layout"]
                 });
-
+                if(i < 30) { mIdx++; pIdx++; }
             } else {
                 // Bio & Chem
-                const bTopic = syllabus.biology[bIdx % syllabus.biology.length];
-                const cTopic = syllabus.chemistry[cIdx % syllabus.chemistry.length];
-                
-                if(i < 32) { bIdx++; cIdx++; }
-
-                subjects.push({
-                    name: "Biology",
-                    unit: bTopic.split(':')[0],
-                    items: [`Topic Questions: ${bTopic.split(':')[1]}`, "Active Recall / Flashcards", "Draw diagrams from memory"]
+                dayData.subjects.push({
+                    title: "Biology",
+                    tag: "IAL Unit 1/2/3",
+                    tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Sketch diagrams from memory"]
                 });
-                subjects.push({
-                    name: "Chemistry",
-                    unit: cTopic.split(':')[0],
-                    items: [`Topic Questions: ${cTopic.split(':')[1]}`, "Write out mechanisms", "Check standard definitions"]
+                dayData.subjects.push({
+                    title: "Chemistry",
+                    tag: "IAL Unit 1/2/3",
+                    tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Write mechanisms", "Check definitions"]
                 });
+                if(i < 30) { bIdx++; cIdx++; }
             }
         }
 
-        schedule.push({
-            id: i,
-            dateObj: currentDate,
-            dateStr: fDate,
-            subjects: subjects,
-            isExam: isPastPaperPhase
-        });
+        schedule.push(dayData);
     }
 
-    // --- Application State ---
-    let completedItems = {}; // Stored in Firebase: { "day_0_sub_0_item_0": true }
-    let selectedDayIndex = 0;
+    // --- UI Functions ---
 
-    // --- DOM Elements ---
-    const scroller = document.getElementById('dateScroller');
-    const scheduleContent = document.getElementById('scheduleContent');
-    const overallProgressBar = document.getElementById('overallProgressBar');
-    const daysLeftDisplay = document.getElementById('daysLeftDisplay');
-
-    // --- Functions ---
-
-    function calculateDaysLeft() {
+    function calculateStats() {
         const today = new Date();
-        const diffTime = Math.abs(mockDate - today);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        daysLeftDisplay.textContent = `${diffDays} Days until Mocks`;
+        const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
+        document.getElementById('daysLeftDisplay').textContent = `${Math.max(0, diff)} Days to Mocks`;
+
+        // Progress Bar
+        let totalTasks = 0;
+        let doneTasks = 0;
+        
+        schedule.forEach(day => {
+            if (day.type === 'rest') return;
+            day.subjects.forEach((sub, sIdx) => {
+                sub.tasks.forEach((_, tIdx) => {
+                    totalTasks++;
+                    if (completedItems[`d${day.id}_s${sIdx}_t${tIdx}`]) doneTasks++;
+                });
+            });
+        });
+
+        const pct = totalTasks === 0 ? 0 : (doneTasks / totalTasks) * 100;
+        document.getElementById('overallProgressBar').style.width = `${pct}%`;
     }
 
-    function calculateProgress() {
-        const totalItems = schedule.reduce((acc, day) => {
-            return acc + day.subjects.reduce((sAcc, sub) => sAcc + sub.items.length, 0);
-        }, 0);
-        
-        const doneCount = Object.keys(completedItems).filter(k => completedItems[k]).length;
-        const percentage = Math.min(100, (doneCount / totalItems) * 100);
-        
-        overallProgressBar.style.width = `${percentage}%`;
-    }
-
-    function renderDateScroller() {
+    function renderScroller() {
+        const scroller = document.getElementById('dateScroller');
         scroller.innerHTML = '';
         
-        // Find today's index
-        const todayString = new Date().toISOString().split('T')[0];
-        const todayIndex = schedule.findIndex(d => d.dateObj.toISOString().split('T')[0] === todayString);
-        
-        // Default to Day 0 if before start, or today index
-        selectedDayIndex = todayIndex >= 0 ? todayIndex : 0;
-        if(todayIndex === -1 && new Date() > mockDate) selectedDayIndex = totalDays - 1;
+        // Find today index
+        const todayStr = new Date().toDateString();
+        const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
+        if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
 
-        schedule.forEach((day, index) => {
-            const chip = document.createElement('div');
-            chip.className = `date-chip ${index === selectedDayIndex ? 'active' : ''}`;
-            chip.innerHTML = `${day.dateStr.month} ${day.dateStr.dayNum}<span>Day ${index + 1}</span>`;
-            chip.onclick = () => {
+        schedule.forEach((day, idx) => {
+            const el = document.createElement('div');
+            el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
+            el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
+            
+            el.onclick = () => {
                 document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                selectedDayIndex = index;
-                renderSchedule(index);
-                // Center selected
-                chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                el.classList.add('active');
+                selectedDayIndex = idx;
+                renderDay(idx);
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
             };
-            scroller.appendChild(chip);
+            scroller.appendChild(el);
         });
-
-        // Initial scroll to today
+        
+        // Scroll to active
         setTimeout(() => {
             const active = document.querySelector('.date-chip.active');
-            if(active) active.scrollIntoView({ behavior: 'auto', inline: 'center' });
+            if(active) active.scrollIntoView({ inline: 'center' });
         }, 100);
     }
 
-    function toggleItem(id) {
-        const currentState = completedItems[id] || false;
-        const newState = !currentState;
+    function renderDay(idx) {
+        const day = schedule[idx];
+        const container = document.getElementById('scheduleContent');
+        container.innerHTML = '';
+
+        // Headers
+        const title = document.getElementById('currentDateTitle');
+        const subtitle = document.getElementById('currentFocusSubtitle');
         
-        // Optimistic UI Update
-        completedItems[id] = newState;
-        document.getElementById(id).classList.toggle('checked', newState);
-        calculateProgress();
+        const isToday = day.dateObj.toDateString() === new Date().toDateString();
+        title.textContent = isToday ? "Today" : `${day.displayDate.name}, ${day.displayDate.month} ${day.displayDate.day}`;
 
-        // Sync to Firebase
-        const userRef = doc(db, "students", userId);
-        setDoc(userRef, { progress: completedItems }, { merge: true });
-    }
-
-    window.handleToggle = toggleItem; // Expose to global scope for HTML onclick
-
-    function renderSchedule(dayIndex) {
-        const day = schedule[dayIndex];
-        
-        // Update Headers
-        document.getElementById('currentDateTitle').textContent = 
-            (day.dateObj.toDateString() === new Date().toDateString()) ? "Today" : `${day.dateStr.dayName}, ${day.dateStr.month} ${day.dateStr.dayNum}`;
-            
-        document.getElementById('currentFocusSubtitle').textContent = 
-            day.isExam ? "Full Past Paper Mode. Simulate exam conditions." : "Deep work. 2 hours per subject.";
-
-        scheduleContent.innerHTML = '';
-
-        if(day.isExam) {
-            const badge = document.createElement('div');
-            badge.style.textAlign = 'center';
-            badge.innerHTML = '<span class="past-paper-badge">Mock Exam Simulation</span>';
-            scheduleContent.appendChild(badge);
+        // Subtitles based on Type
+        if (day.type === 'rest') {
+            subtitle.textContent = "Recharge your mind.";
+            container.innerHTML = `
+                <div class="card rest-mode">
+                    <span class="rest-icon">🧘</span>
+                    <div class="rest-title">Rest Day</div>
+                    <div class="rest-desc">
+                        No studying today. Sleep, eat well, and clear your mind.<br>
+                        Tomorrow is the big day.
+                    </div>
+                </div>
+            `;
+            return;
         }
 
+        if (day.type === 'exam') {
+            subtitle.textContent = "Past Paper Mode. Strict timing.";
+        } else {
+            subtitle.textContent = "Deep Focus Revision.";
+        }
+
+        // Render Subjects
+        const card = document.createElement('div');
+        card.className = 'card';
+        
         day.subjects.forEach((sub, sIdx) => {
-            const card = document.createElement('div');
-            card.className = `schedule-card ${day.isExam ? 'past-paper-mode' : ''}`;
+            const row = document.createElement('div');
+            row.className = 'subject-row';
             
             let html = `
                 <div class="subject-header">
-                    <div class="subject-title">
-                        ${sub.name} 
-                        ${!day.isExam ? `<span class="unit-badge">${sub.unit}</span>` : ''}
-                    </div>
-                    <div class="time-est">2h 00m</div>
+                    <div class="sub-name">${sub.title}</div>
+                    <span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span>
                 </div>
             `;
 
-            sub.items.forEach((item, iIdx) => {
-                const itemId = `day_${dayIndex}_sub_${sIdx}_item_${iIdx}`;
-                const isChecked = completedItems[itemId] ? 'checked' : '';
-                
+            sub.tasks.forEach((task, tIdx) => {
+                const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
+                const checked = completedItems[itemId] ? 'checked' : '';
                 html += `
-                    <div class="checklist-item ${isChecked}" id="${itemId}" onclick="window.handleToggle('${itemId}')">
+                    <div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')">
                         <div class="checkbox"></div>
-                        <div class="item-text">${item}</div>
+                        <div class="text">${task}</div>
                     </div>
                 `;
             });
 
-            card.innerHTML = html;
-            scheduleContent.appendChild(card);
+            row.innerHTML = html;
+            card.appendChild(row);
         });
+
+        container.appendChild(card);
     }
 
-    // --- Initialization ---
-    async function init() {
-        calculateDaysLeft();
+    // --- Actions ---
+    window.toggle = (id) => {
+        const isChecked = !completedItems[id];
+        completedItems[id] = isChecked;
         
-        // Listen to Firebase Realtime Updates
-        const userRef = doc(db, "students", userId);
-        
-        // Try getting initial doc, if not exists, create empty
-        try {
-            const docSnap = await getDoc(userRef);
-            if(docSnap.exists()) {
-                completedItems = docSnap.data().progress || {};
-            }
-        } catch(e) {
-            console.log("Offline or first load", e);
+        // Optimistic Update
+        const el = document.getElementById(id);
+        if(el) {
+            if(isChecked) el.classList.add('checked');
+            else el.classList.remove('checked');
         }
+        
+        calculateStats();
 
-        renderDateScroller();
-        renderSchedule(selectedDayIndex);
-        calculateProgress();
+        // Save
+        const docRef = doc(db, "users", userId);
+        setDoc(docRef, { progress: completedItems }, { merge: true });
+    };
 
-        // Subscribe to changes (Sync across tabs/devices)
-        onSnapshot(userRef, (doc) => {
-            if (doc.exists()) {
-                completedItems = doc.data().progress || {};
-                // Only re-render checkmarks to avoid jitter, don't full re-render
-                Object.keys(completedItems).forEach(key => {
-                    const el = document.getElementById(key);
-                    if(el) {
-                        if(completedItems[key]) el.classList.add('checked');
-                        else el.classList.remove('checked');
-                    }
-                });
-                calculateProgress();
+    // --- Init ---
+    async function init() {
+        const docRef = doc(db, "users", userId);
+        
+        // Live Listen
+        onSnapshot(docRef, (snap) => {
+            if (snap.exists()) {
+                completedItems = snap.data().progress || {};
+                renderDay(selectedDayIndex); // Re-render current view to show sync
+                calculateStats();
+                document.getElementById('dbStatus').textContent = "Synced";
+            } else {
+                document.getElementById('dbStatus').textContent = "Ready to start";
             }
         });
+
+        renderScroller();
+        renderDay(selectedDayIndex);
+        calculateStats();
     }
 
     init();
