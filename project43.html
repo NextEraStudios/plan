@@ -147,6 +147,9 @@
             animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* --- Loader for Initial State --- */
+        .loader-container { display: flex; justify-content: center; align-items: center; height: 200px; color: #86868b; }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -254,17 +257,16 @@
         <p id="currentFocusSubtitle">Focus.</p>
     </div>
 
-    <div id="scheduleContent"></div>
-    <div class="firebase-status" id="dbStatus">Syncing with cloud...</div>
+    <!-- Added a loader state -->
+    <div id="scheduleContent">
+        <div class="loader-container">Connecting to cloud...</div>
+    </div>
+    <div class="firebase-status" id="dbStatus">Syncing...</div>
 </main>
 
-<!-- Unified Script: Imports + Logic -->
 <script type="module">
-  // 1. OFFICIAL IMPORTS (v12.7.0)
+  // 1. CLEAN IMPORTS: No Analytics, just what we need.
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
-  
-  // 2. REQUIRED DATABASE IMPORTS (Missing in official basic snippet)
   import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -277,13 +279,9 @@
     measurementId: "G-ERY7L5MJ5N"
   };
 
-  // 3. INITIALIZATION
+  // 2. INIT
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const db = getFirestore(app); // We must start the database here
-
-  // --- APP LOGIC STARTS HERE ---
-  // (We keep it inside this module so it can see 'db')
+  const db = getFirestore(app);
 
   let userId = localStorage.getItem('p43_user_id');
   if (!userId) {
@@ -295,12 +293,13 @@
   let selectedDayIndex = 0;
   const mockStartDate = new Date("2026-02-24");
 
+  // --- Content Data (Immutable) ---
   const syllabus = {
       maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
       physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
       biology: [ "Chemistry of Life", "Mammalian Transport", "CVD Health", "Membranes", "Proteins & DNA", "Genetics", "Stem Cells", "Practical Bio" ],
       chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
-  };[[1](https://www.google.com/url?sa=E&q=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fgrounding-api-redirect%2FAUZIYQEPtEVteYsAQs-RquyFLOJFi0E7mtPlNdYgaQE9GsNza1nwYpMhmRFSx-lC5wE7v_2MITj2iS-RbU0yWs4bvvxwwSRlxcdw-z2fOTED7G7lvBeNL7R5bjZOpMsDbs4Zb6_nu-m5o19bVDbMWzuf574%3D)][[2](https://www.google.com/url?sa=E&q=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fgrounding-api-redirect%2FAUZIYQFznXvyUJTBIqNv-U9wSH_jwWZ1TI6bytAmB1MwS4F7Umm363abRRdH7bbIIpzKwGg6cjOdUsFGe1ZShaeG1nusoz5NIFhr2V2TeCOxJBFapeJLRTPWpXcf8id3qngCYW61YmUVL2suf-rn3P4ZuAU%3D)]
+  };
 
   const pastPaperSchedule = [
       { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
@@ -314,7 +313,6 @@
       { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } 
   ];
 
-  // --- Schedule Generator ---
   const schedule = [];
   const startDate = new Date("2026-01-12");
   let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
@@ -441,7 +439,6 @@
           sub.tasks.forEach((task, tIdx) => {
               const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
               const checked = completedItems[itemId] ? 'checked' : '';
-              // IMPORTANT: Using window.toggle here
               html += `<div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')"><div class="checkbox"></div><div class="text">${task}</div></div>`;
           });
 
@@ -451,17 +448,20 @@
       container.appendChild(card);
   }
 
-  // --- ACTIONS (Must be attached to window to work in HTML) ---
+  // --- SAFE TOGGLE ---
   window.toggle = (id) => {
-      // 1. Optimistic UI update
+      // Safety Check: Does the element exist?
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      // 1. Optimistic UI
       const isChecked = !completedItems[id];
+      // IMPORTANT: Update local state immediately for the click feedback
       completedItems[id] = isChecked;
       
-      const el = document.getElementById(id);
-      if(el) {
-          if(isChecked) el.classList.add('checked');
-          else el.classList.remove('checked');
-      }
+      if(isChecked) el.classList.add('checked');
+      else el.classList.remove('checked');
+      
       calculateStats();
       
       // 2. Set Status
@@ -469,35 +469,43 @@
       statusEl.textContent = "Saving...";
       statusEl.style.color = "#86868b";
 
-      // 3. Save to Firebase (using the 'db' initialized in this module)
+      // 3. Save to Firebase with Merge (Preserve other data)
       const docRef = doc(db, "users", userId);
+      // We send 'progress' as an object. We are updating the whole map for simplicity in this structure,
+      // but 'merge: true' at the top level ensures we don't wipe other fields if they existed.
       setDoc(docRef, { progress: completedItems }, { merge: true });
   };
 
-  // --- INIT ---
+  // --- APP STARTUP ---
   async function init() {
-      renderScroller();
-      renderDay(selectedDayIndex);
-      calculateStats();
-
+      // Note: We do NOT render here anymore. We wait for data.
+      
       const docRef = doc(db, "users", userId);
       
-      // Live listener
+      // Listener handles initial load AND live updates
       onSnapshot(docRef, (snap) => {
           const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
           
           if (snap.exists()) {
-              completedItems = snap.data().progress || {};
-              renderDay(selectedDayIndex); 
-              calculateStats();
-              
-              const statusEl = document.getElementById('dbStatus');
-              if (source === "Local") {
-                  statusEl.textContent = "Unsynced changes...";
-              } else {
-                  statusEl.textContent = "All changes saved";
-                  statusEl.style.color = "#34c759";
-              }
+              // CRITICAL FIX: Merge data, don't just replace it
+              // This keeps our local optimistic updates valid if a sync happens mid-click
+              const remoteData = snap.data().progress || {};
+              completedItems = { ...completedItems, ...remoteData };
+          } else {
+              completedItems = {};
+          }
+          
+          // Now that we have data, we render the UI
+          renderScroller();
+          renderDay(selectedDayIndex); 
+          calculateStats();
+          
+          const statusEl = document.getElementById('dbStatus');
+          if (source === "Local") {
+              statusEl.textContent = "Unsynced changes...";
+          } else {
+              statusEl.textContent = "All changes saved";
+              statusEl.style.color = "#34c759";
           }
       });
   }
