@@ -147,9 +147,6 @@
             animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* --- Loader for Initial State --- */
-        .loader-container { display: flex; justify-content: center; align-items: center; height: 200px; color: #86868b; }
-
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -257,15 +254,11 @@
         <p id="currentFocusSubtitle">Focus.</p>
     </div>
 
-    <!-- Added a loader state -->
-    <div id="scheduleContent">
-        <div class="loader-container">Connecting to cloud...</div>
-    </div>
-    <div class="firebase-status" id="dbStatus">Syncing...</div>
+    <div id="scheduleContent"></div>
+    <div class="firebase-status" id="dbStatus">Loading...</div>
 </main>
 
 <script type="module">
-  // 1. CLEAN IMPORTS: No Analytics, just what we need.
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
   import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
@@ -279,7 +272,6 @@
     measurementId: "G-ERY7L5MJ5N"
   };
 
-  // 2. INIT
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -289,11 +281,12 @@
       localStorage.setItem('p43_user_id', userId);
   }
   
+  // --- STATE ---
   let completedItems = {}; 
   let selectedDayIndex = 0;
   const mockStartDate = new Date("2026-02-24");
 
-  // --- Content Data (Immutable) ---
+  // --- CONTENT ---
   const syllabus = {
       maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
       physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
@@ -320,7 +313,6 @@
   for (let i = 0; i < 43; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
-      
       const dayOfMonth = currentDate.getDate();
       const month = currentDate.toLocaleString('default', { month: 'short' });
       
@@ -358,7 +350,7 @@
       schedule.push(dayData);
   }
 
-  // --- UI Functions ---
+  // --- UI Logic ---
   function calculateStats() {
       const today = new Date();
       const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
@@ -381,19 +373,18 @@
       document.getElementById('overallProgressBar').style.width = `${pct}%`;
   }
 
+  // IMPORTANT: renderScroller is only called ONCE at startup now.
   function renderScroller() {
       const scroller = document.getElementById('dateScroller');
       scroller.innerHTML = '';
       
-      const todayStr = new Date().toDateString();
-      const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
-      if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
-
       schedule.forEach((day, idx) => {
           const el = document.createElement('div');
           el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
+          el.id = `day-chip-${idx}`; // Added ID for easier updates
           el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
           el.onclick = () => {
+              // Manual selection logic
               document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
               el.classList.add('active');
               selectedDayIndex = idx;
@@ -403,10 +394,11 @@
           scroller.appendChild(el);
       });
       
+      // Initial Scroll
       setTimeout(() => {
           const active = document.querySelector('.date-chip.active');
           if(active) active.scrollIntoView({ inline: 'center' });
-      }, 100);
+      }, 50);
   }
 
   function renderDay(idx) {
@@ -448,64 +440,75 @@
       container.appendChild(card);
   }
 
-  // --- SAFE TOGGLE ---
+  // --- ACTIONS ---
   window.toggle = (id) => {
-      // Safety Check: Does the element exist?
       const el = document.getElementById(id);
       if (!el) return;
 
-      // 1. Optimistic UI
       const isChecked = !completedItems[id];
-      // IMPORTANT: Update local state immediately for the click feedback
       completedItems[id] = isChecked;
       
+      // Update DOM immediately
       if(isChecked) el.classList.add('checked');
       else el.classList.remove('checked');
       
+      // Update Cache immediately
+      localStorage.setItem('p43_progress_cache', JSON.stringify(completedItems));
       calculateStats();
       
-      // 2. Set Status
+      // Update Cloud
       const statusEl = document.getElementById('dbStatus');
       statusEl.textContent = "Saving...";
       statusEl.style.color = "#86868b";
 
-      // 3. Save to Firebase with Merge (Preserve other data)
       const docRef = doc(db, "users", userId);
-      // We send 'progress' as an object. We are updating the whole map for simplicity in this structure,
-      // but 'merge: true' at the top level ensures we don't wipe other fields if they existed.
       setDoc(docRef, { progress: completedItems }, { merge: true });
   };
 
-  // --- APP STARTUP ---
-  async function init() {
-      // Note: We do NOT render here anymore. We wait for data.
-      
+  // --- INITIALIZATION ---
+  function init() {
+      // 1. Determine "Today" (Only happens once on load)
+      const todayStr = new Date().toDateString();
+      const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
+      if (todayIdx !== -1) selectedDayIndex = todayIdx;
+
+      // 2. Load from LocalStorage Cache (Instant Load)
+      const cached = localStorage.getItem('p43_progress_cache');
+      if (cached) {
+          completedItems = JSON.parse(cached);
+          document.getElementById('dbStatus').textContent = "Loaded from cache";
+      }
+
+      // 3. Render Static UI (Scroller only renders once now)
+      renderScroller();
+      renderDay(selectedDayIndex);
+      calculateStats();
+
+      // 4. Connect to Firebase (Background Sync)
       const docRef = doc(db, "users", userId);
       
-      // Listener handles initial load AND live updates
       onSnapshot(docRef, (snap) => {
-          const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
-          
           if (snap.exists()) {
-              // CRITICAL FIX: Merge data, don't just replace it
-              // This keeps our local optimistic updates valid if a sync happens mid-click
-              const remoteData = snap.data().progress || {};
-              completedItems = { ...completedItems, ...remoteData };
-          } else {
-              completedItems = {};
-          }
-          
-          // Now that we have data, we render the UI
-          renderScroller();
-          renderDay(selectedDayIndex); 
-          calculateStats();
-          
-          const statusEl = document.getElementById('dbStatus');
-          if (source === "Local") {
-              statusEl.textContent = "Unsynced changes...";
-          } else {
-              statusEl.textContent = "All changes saved";
-              statusEl.style.color = "#34c759";
+              const serverData = snap.data().progress || {};
+              // Merge: Server wins if conflicts, but mostly keeps sync
+              completedItems = { ...completedItems, ...serverData };
+              
+              // Update Cache
+              localStorage.setItem('p43_progress_cache', JSON.stringify(completedItems));
+              
+              // Only update the checkboxes and stats. DO NOT re-render the scroller.
+              renderDay(selectedDayIndex); 
+              calculateStats();
+              
+              const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
+              const statusEl = document.getElementById('dbStatus');
+              if (source === "Local") {
+                  statusEl.textContent = "Unsynced changes...";
+                  statusEl.style.color = "#86868b";
+              } else {
+                  statusEl.textContent = "All changes saved";
+                  statusEl.style.color = "#34c759";
+              }
           }
       });
   }
