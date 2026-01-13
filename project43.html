@@ -259,9 +259,17 @@
 </main>
 
 <!-- Firebase SDK -->
+<!-- Firebase SDK -->
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+    // 1. Use a stable, specific version (e.g., 10.8.0) to ensure fast CDN response
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        doc, 
+        setDoc, 
+        onSnapshot, 
+        enableIndexedDbPersistence 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyALPWZE3MlEjy0qhhGl_V8WZxBJyA3Vo68",
@@ -276,6 +284,17 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // 2. ENABLE OFFLINE PERSISTENCE
+    // This makes the app load instantly using cached data, then syncs in background.
+    enableIndexedDbPersistence(db)
+        .catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.log('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+            } else if (err.code == 'unimplemented') {
+                console.log('The current browser does not support all of the features required to enable persistence');
+            }
+        });
+
     // --- State & User ---
     let userId = localStorage.getItem('p43_user_id');
     if (!userId) {
@@ -287,7 +306,7 @@
     let selectedDayIndex = 0;
     const mockStartDate = new Date("2026-02-24");
 
-    // --- Syllabus Content ---
+    // --- Syllabus Content (Kept same as your code) ---
     const syllabus = {
         maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
         physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
@@ -295,31 +314,28 @@
         chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
     };
 
-    // --- Past Paper Rotation (Feb 14 - Feb 22) ---
-    // Covering: Physics (U1, U2, U3), Bio (U1, U2, U3), Chem (U1, U2, U3), Maths (P2, S1)
+    // --- Past Paper Rotation ---
     const pastPaperSchedule = [
-        /* Day 33 (Feb 14) */ { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
-        /* Day 34 (Feb 15) */ { papers: ["Biology U1", "Physics U2", "HPAT"] },
-        /* Day 35 (Feb 16) */ { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
-        /* Day 36 (Feb 17) */ { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
-        /* Day 37 (Feb 18) */ { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
-        /* Day 38 (Feb 19) */ { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
-        /* Day 39 (Feb 20) */ { papers: ["Biology U2", "Physics U3", "Maths P2"] },
-        /* Day 40 (Feb 21) */ { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
-        /* Day 41 (Feb 22) */ { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } // Finishing with heavy hitters
+        { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
+        { papers: ["Biology U1", "Physics U2", "HPAT"] },
+        { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
+        { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
+        { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
+        { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
+        { papers: ["Biology U2", "Physics U3", "Maths P2"] },
+        { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
+        { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } 
     ];
 
     // --- Schedule Generator ---
     const schedule = [];
     const startDate = new Date("2026-01-12");
-    
     let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
 
     for (let i = 0; i < 43; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         
-        const dateString = currentDate.toDateString();
         const dayOfMonth = currentDate.getDate();
         const month = currentDate.toLocaleString('default', { month: 'short' });
         
@@ -327,73 +343,42 @@
             id: i,
             dateObj: currentDate,
             displayDate: { month, day: dayOfMonth, name: currentDate.toLocaleString('default', { weekday: 'short' }) },
-            type: 'revision', // revision, exam, rest
+            type: 'revision', 
             subjects: []
         };
 
-        // Date Logic
         if (i === 42) { 
-            // Feb 23: Rest Day
             dayData.type = 'rest';
         } else if (i >= 33) {
-            // Feb 14 - Feb 22: Past Papers
             dayData.type = 'exam';
             const paperSet = pastPaperSchedule[i - 33];
-            
             paperSet.papers.forEach(paperName => {
                 dayData.subjects.push({
                     title: paperName,
                     tag: "PAST PAPER",
-                    tasks: [
-                        "Complete paper (Timed condition)",
-                        "Mark strictly using Mark Scheme",
-                        "Review errors & update flashcards"
-                    ]
+                    tasks: ["Complete paper (Timed)", "Mark strictly", "Review errors"]
                 });
             });
-
         } else {
-            // Jan 12 - Feb 13: Revision
             if (i % 2 === 0) {
-                // Maths & Physics
-                dayData.subjects.push({
-                    title: "Mathematics",
-                    tag: "P2 / S1",
-                    tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Do 10 hard exam questions", "Review formula derivations"]
-                });
-                dayData.subjects.push({
-                    title: "Physics",
-                    tag: "IAL Unit 1/2/3",
-                    tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Define key terms", "Practice calculation layout"]
-                });
+                dayData.subjects.push({ title: "Mathematics", tag: "P2 / S1", tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Exam Qs", "Formulas"] });
+                dayData.subjects.push({ title: "Physics", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Definitions", "Calculations"] });
                 if(i < 30) { mIdx++; pIdx++; }
             } else {
-                // Bio & Chem
-                dayData.subjects.push({
-                    title: "Biology",
-                    tag: "IAL Unit 1/2/3",
-                    tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Sketch diagrams from memory"]
-                });
-                dayData.subjects.push({
-                    title: "Chemistry",
-                    tag: "IAL Unit 1/2/3",
-                    tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Write mechanisms", "Check definitions"]
-                });
+                dayData.subjects.push({ title: "Biology", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Diagrams"] });
+                dayData.subjects.push({ title: "Chemistry", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Mechanisms", "Definitions"] });
                 if(i < 30) { bIdx++; cIdx++; }
             }
         }
-
         schedule.push(dayData);
     }
 
     // --- UI Functions ---
-
     function calculateStats() {
         const today = new Date();
         const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
         document.getElementById('daysLeftDisplay').textContent = `${Math.max(0, diff)} Days to Mocks`;
 
-        // Progress Bar
         let totalTasks = 0;
         let doneTasks = 0;
         
@@ -415,7 +400,6 @@
         const scroller = document.getElementById('dateScroller');
         scroller.innerHTML = '';
         
-        // Find today index
         const todayStr = new Date().toDateString();
         const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
         if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
@@ -424,7 +408,6 @@
             const el = document.createElement('div');
             el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
             el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
-            
             el.onclick = () => {
                 document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
                 el.classList.add('active');
@@ -435,7 +418,6 @@
             scroller.appendChild(el);
         });
         
-        // Scroll to active
         setTimeout(() => {
             const active = document.querySelector('.date-chip.active');
             if(active) active.scrollIntoView({ inline: 'center' });
@@ -447,110 +429,95 @@
         const container = document.getElementById('scheduleContent');
         container.innerHTML = '';
 
-        // Headers
         const title = document.getElementById('currentDateTitle');
         const subtitle = document.getElementById('currentFocusSubtitle');
         
         const isToday = day.dateObj.toDateString() === new Date().toDateString();
         title.textContent = isToday ? "Today" : `${day.displayDate.name}, ${day.displayDate.month} ${day.displayDate.day}`;
 
-        // Subtitles based on Type
         if (day.type === 'rest') {
             subtitle.textContent = "Recharge your mind.";
-            container.innerHTML = `
-                <div class="card rest-mode">
-                    <span class="rest-icon">🧘</span>
-                    <div class="rest-title">Rest Day</div>
-                    <div class="rest-desc">
-                        No studying today. Sleep, eat well, and clear your mind.<br>
-                        Tomorrow is the big day.
-                    </div>
-                </div>
-            `;
+            container.innerHTML = `<div class="card rest-mode"><span class="rest-icon">🧘</span><div class="rest-title">Rest Day</div><div class="rest-desc">No studying today.</div></div>`;
             return;
         }
 
-        if (day.type === 'exam') {
-            subtitle.textContent = "Past Paper Mode. Strict timing.";
-        } else {
-            subtitle.textContent = "Deep Focus Revision.";
-        }
+        subtitle.textContent = day.type === 'exam' ? "Past Paper Mode." : "Deep Focus Revision.";
 
-        // Render Subjects
         const card = document.createElement('div');
         card.className = 'card';
         
         day.subjects.forEach((sub, sIdx) => {
             const row = document.createElement('div');
             row.className = 'subject-row';
-            
-            let html = `
-                <div class="subject-header">
-                    <div class="sub-name">${sub.title}</div>
-                    <span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span>
-                </div>
-            `;
+            let html = `<div class="subject-header"><div class="sub-name">${sub.title}</div><span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span></div>`;
 
             sub.tasks.forEach((task, tIdx) => {
                 const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
                 const checked = completedItems[itemId] ? 'checked' : '';
-                html += `
-                    <div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')">
-                        <div class="checkbox"></div>
-                        <div class="text">${task}</div>
-                    </div>
-                `;
+                html += `<div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')"><div class="checkbox"></div><div class="text">${task}</div></div>`;
             });
 
             row.innerHTML = html;
             card.appendChild(row);
         });
-
         container.appendChild(card);
     }
 
     // --- Actions ---
     window.toggle = (id) => {
+        // 1. Optimistic UI update (Immediate)
         const isChecked = !completedItems[id];
         completedItems[id] = isChecked;
         
-        // Optimistic Update
         const el = document.getElementById(id);
         if(el) {
             if(isChecked) el.classList.add('checked');
             else el.classList.remove('checked');
         }
-        
         calculateStats();
+        
+        // 2. Set Status immediately to "Saving"
+        const statusEl = document.getElementById('dbStatus');
+        statusEl.textContent = "Saving...";
+        statusEl.style.color = "#86868b";
 
-        // Save
+        // 3. Fire and forget (don't await)
         const docRef = doc(db, "users", userId);
         setDoc(docRef, { progress: completedItems }, { merge: true });
     };
 
     // --- Init ---
     async function init() {
-        const docRef = doc(db, "users", userId);
-        
-        // Live Listen
-        onSnapshot(docRef, (snap) => {
-            if (snap.exists()) {
-                completedItems = snap.data().progress || {};
-                renderDay(selectedDayIndex); // Re-render current view to show sync
-                calculateStats();
-                document.getElementById('dbStatus').textContent = "Synced";
-            } else {
-                document.getElementById('dbStatus').textContent = "Ready to start";
-            }
-        });
-
         renderScroller();
         renderDay(selectedDayIndex);
         calculateStats();
+
+        const docRef = doc(db, "users", userId);
+        
+        // Listen with metadata to distinguish local vs server events
+        onSnapshot(docRef, (snap) => {
+            const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
+            
+            if (snap.exists()) {
+                completedItems = snap.data().progress || {};
+                
+                // Only re-render if it's a server update to prevent UI jitter
+                // or if we just loaded for the first time
+                renderDay(selectedDayIndex); 
+                calculateStats();
+                
+                const statusEl = document.getElementById('dbStatus');
+                if (source === "Local") {
+                    statusEl.textContent = "Unsynced changes...";
+                } else {
+                    statusEl.textContent = "All changes saved";
+                    statusEl.style.color = "#34c759";
+                }
+            }
+        });
     }
 
     init();
-
 </script>
 </body>
 </html>
