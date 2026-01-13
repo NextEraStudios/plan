@@ -242,436 +242,270 @@
 </head>
 <body>
 
-<header>
-    <div class="header-content">
-        <div>
-            <h1>Study Plan 2025/26</h1>
-            <div class="sync-status" id="sync-status">Connecting to Cloud...</div>
-        </div>
-        <div class="overall-progress">
-            <span id="total-percent">0%</span> Complete
-        </div>
-    </div>
-    <div class="progress-container">
-        <div class="progress-fill" id="global-progress-bar"></div>
-    </div>
-</header>
 
-<div class="date-nav" id="date-nav"></div>
-
-<div class="container">
-    <div class="day-header">
-        <h2 id="current-date-display">December 15</h2>
-        <span class="day-status" id="day-status">0/0 Completed</span>
-    </div>
-
-    <div id="cards-container">
-        <!-- Cards injected via JS -->
-    </div>
-    
-    <div class="done-message" id="done-message">
-        <h3>🎉 All done for today!</h3>
-        <p>Great job. Rest up for tomorrow.</p>
-    </div>
-</div>
 
 <!-- FIREBASE SCRIPTS -->
+
+    
+            <!-- Firebase SDK & App Logic -->
 <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // 1. IMPORT FIRESTORE FUNCTIONS
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // --- YOUR CONFIGURATION ---
+    // 2. YOUR CONFIGURATION
     const firebaseConfig = {
-      apiKey: "AIzaSyA1peBFo8jkhdnMEhDb-1HS4eVmbkl8eYA",
-      authDomain: "study-tracket.firebaseapp.com",
-      projectId: "study-tracket",
-      storageBucket: "study-tracket.firebasestorage.app",
-      messagingSenderId: "667043006914",
-      appId: "1:667043006914:web:e348078f05f30b4afb6e5b",
-      databaseURL: "https://study-tracket-default-rtdb.firebaseio.com" 
+        apiKey: "AIzaSyALPWZE3MlEjy0qhhGl_V8WZxBJyA3Vo68",
+        authDomain: "mockexams-f756d.firebaseapp.com",
+        projectId: "mockexams-f756d",
+        storageBucket: "mockexams-f756d.firebasestorage.app",
+        messagingSenderId: "330440451161",
+        appId: "1:330440451161:web:69331f774c4db8ef0c3d48",
+        measurementId: "G-ERY7L5MJ5N"
     };
-    // ---------------------------------------
 
-    // Initialize Firebase
+    // 3. INITIALIZE FIREBASE & DATABASE
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app); // This was missing in your code
 
-    // --- DATA (THE PLAN) ---
-    const scheduleData = [
-        {
-            date: "2025-12-15",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 1A: Chemistry for Biologists", tasks: ["1. The Chemistry of Life", "2. Carbs: Monosaccharides & Disaccharides", "3. Carbs: Polysaccharides", "4. Lipids", "5. Proteins"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
-            ]
-        },
-        {
-            date: "2025-12-16",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 1A & 1B: Formulae & Equations", tasks: ["1A. Atoms, Elements, Molecules", "1B. Writing Chemical Equations", "1B. Reactions of Acids", "1B. Displacement & Precipitation"] },
-                { type: "physics", title: "Physics", topic: "Topic 1A: Motion", tasks: ["1. Velocity and Acceleration", "2. Motion Graphs", "3. Adding Forces", "5. Newton's Laws of Motion", "6. Kinematics Equations (Suvat)"] }
-            ]
-        },
-        {
-            date: "2025-12-17",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 1B: Mammalian Transport", tasks: ["1. Principles of Circulation", "2. Roles of the Blood", "3. Circulation in Blood Vessels", "4. The Mammalian Heart", "5. Atherosclerosis"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
-            ]
-        },
-        {
-            date: "2025-12-18",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 1C & 1D: Calculations", tasks: ["1C. Moles & Masses", "1C. Reacting Masses", "1C. Yield & Atom Economy", "1D. Empirical & Molecular Formulae"] },
-                { type: "physics", title: "Physics", topic: "Topic 1A & 1C: Mechanics", tasks: ["1A. Moments", "1A. Resolving Vectors", "1A. Projectiles", "1C. Momentum & Conservation"] }
-            ]
-        },
-        {
-            date: "2025-12-19",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 1C: Cardiovascular Health", tasks: ["1. Risk, Correlation & Cause", "2. Investigating Causes of CVDs", "3. Risk Factors", "4. Diet & Health", "7. Benefits/Risks of Treatment"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
-            ]
-        },
-        {
-            date: "2025-12-20",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 1E & 2A: Solutions/Atomic", tasks: ["1E. Molar Volume of Gases", "1E. Concentrations & ppm", "2A. Structure of the Atom & Isotopes"] },
-                { type: "physics", title: "Physics", topic: "Topic 1B: Energy", tasks: ["1. GPE and KE", "2. Work and Power", "Exam Practice: Mechanics of Soccer"] }
-            ]
-        },
-        {
-            date: "2025-12-21",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 2A: Membranes & Transport", tasks: ["1. Cell Membranes", "2. Transport & Diffusion", "3. Osmosis", "4. Active Transport", "5. Gas Exchange Surfaces"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
-            ]
-        },
-        {
-            date: "2025-12-22",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 2A & 2B: Periodic Table", tasks: ["2A. Mass Spectrometry", "2A. Electronic Config & Orbitals", "2A. Ionisation Energies", "2B. Periodic Properties & Trends"] },
-                { type: "physics", title: "Physics", topic: "Topic 2A: Fluids", tasks: ["1. Fluids, Density, Upthrust", "2. Fluid Movement (Laminar/Turbulent)", "3. Viscosity", "4. Terminal Velocity"] }
-            ]
-        },
-        {
-            date: "2025-12-23",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 2B: Proteins & DNA", tasks: ["1. Enzymes", "2. How Enzymes Work", "3. Structure of DNA/RNA", "4. How DNA Works (Replication)", "5. Protein Synthesis"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] }
-            ]
-        },
-        {
-            date: "2025-12-24",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 3A & 3B: Bonding", tasks: ["3A. Ionic Bonding & Radii", "3A. Physical Properties of Ionic", "3B. Covalent Bonding", "3B. Electronegativity & Polarity", "3B. Dative Covalent Bonds"] },
-                { type: "physics", title: "Physics", topic: "Topic 3A: Basic Waves", tasks: ["1. Wave Basics", "2. Wave Types (Longitudinal/Transverse)", "Exam Practice: Earthquake waves"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 2: The Intricacies of CHF", tasks: ["2.1 Write: Biology of Heart Failure (500 words)", "Detail ventricular remodelling", "Detail neurohormonal activation"] }
-            ]
-        },
-        {
-            date: "2025-12-25",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 2C: Gene Expression", tasks: ["1. Gene Mutation", "2. Patterns of Inheritance", "3. Sex Linkage", "4. Cystic Fibrosis", "5. Genetic Screening"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 2: Diagnostics", tasks: ["2.2 Write: Current Tools & Flaws (500 words)", "Critique Echo/MRI/ECG limitations", "Finish Chapter 2"] }
-            ]
-        },
-        {
-            date: "2025-12-26",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 3C, 3D, 3E: Structure", tasks: ["3C. Shapes of Molecules (VSEPR)", "3C. Non-polar/Polar Molecules", "3D. Metallic Bonding", "3E. Solid Lattices (Structure & Props)"] },
-                { type: "physics", title: "Physics", topic: "Topic 3B: Behaviour of Waves", tasks: ["1. Phase and Superposition", "2. Stationary Waves", "4. Wave Interference"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 3: The Digital Heart", tasks: ["3.1 Write: Digital Twin vs 3D Model", "3.2 Write: Data Req (Structure/Function/Molecular)", "Word Count Target: 600 words"] }
-            ]
-        },
-        {
-            date: "2025-12-27",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 3A: Cell Structure", tasks: ["1. Observing Cells", "2. Eukaryotic Cells (Structures)", "3. Protein Transport", "4. Prokaryotic Cells", "5. Organisation of Cells"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 3: Simulation", tasks: ["3.3 Write: Physics models & ML integration", "Explain how the twin is built", "Finish Chapter 3 (600 words)"] }
-            ]
-        },
-        {
-            date: "2025-12-28",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 4A: Intro to Organic", tasks: ["1. What is Organic Chem?", "2. Types of Formulae", "3. Functional Groups", "4. Nomenclature (Naming)", "5. Isomerism", "6. Hazards & Risks"] },
-                { type: "physics", title: "Physics", topic: "Topic 3B & 3C: Optics", tasks: ["3B. Diffraction", "3C. Refraction", "3C. Total Internal Reflection"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Improvements", tasks: ["4.1 Write: Diagnosis to Prognosis", "Explain risk assessment benefits", "Target: 500 words"] }
-            ]
-        },
-        {
-            date: "2025-12-29",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Topic 3B: Reproduction", tasks: ["1. The Cell Cycle", "2. Mitosis", "3. Sexual Reproduction & Meiosis", "4. Gametes Structure", "5. Fertilisation in Mammals/Plants"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Pharma", tasks: ["4.2 Write: Personalising Pharmacotherapy", "Simulating drug effects (Beta-blockers)", "Target: 500 words"] }
-            ]
-        },
-        {
-            date: "2025-12-30",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 4B: Alkanes", tasks: ["1. Alkanes from Crude Oil", "2. Alkanes as Fuels", "4. Substitution Reactions (Radical Mechanism)"] },
-                { type: "physics", title: "Physics", topic: "Topic 3C & Review", tasks: ["3C. Polarisation", "Review Topic 3: Waves"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 4: Surgery", tasks: ["4.3 Write: Reducing Surgical Risk", "Simulating haemodynamics", "Finish Chapter 4 (500 words)"] }
-            ]
-        },
-        {
-            date: "2025-12-31",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Review Topic 1", tasks: ["Review Topic 1A (Chem of Life)", "Review Topic 1B (Transport)", "Review Topic 1C (Health)", "Exam Questions: Topic 1"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Review Phase 1", tasks: ["Read through Chapters 2, 3, & 4", "Check flow and referencing", "Catch up on word count if behind"] }
-            ]
-        },
-        {
-            date: "2026-01-01",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 5A: Alkenes", tasks: ["1. Alkenes & Bonding", "2. Geometric Isomerism", "3. Addition Reactions", "4. Mechanisms of Addition"] },
-                { type: "physics", title: "Physics", topic: "Topic 4A: Electrical Quantities", tasks: ["1. Electric Current", "3. Current/Voltage Relationships", "4. Resistivity", "5. Conduction & Resistance", "6. Semiconductors"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 5: Barriers", tasks: ["5.1 Write: Tech/Logistical Challenges", "5.2 Write: FDA/Regulatory Issues", "5.3 Write: Ethical Concerns", "Finish Chapter 5 (600 words)"] }
-            ]
-        },
-        {
-            date: "2026-01-02",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Review Topic 2", tasks: ["Review Topic 2A (Membranes)", "Review Topic 2B (DNA/Protein)", "Review Topic 2C (Genetics)", "Exam Questions: Topic 2"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Chapter 6: Conclusion", tasks: ["6.1 Write: Final Judgement", "6.2 Write: Future Vision", "Finish Chapter 6 (400 words)"] }
-            ]
-        },
-        {
-            date: "2026-01-03",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Topic 5B & Calc Review", tasks: ["5B. Polymerisation Reactions", "5B. Polymer Waste", "Review Topic 1 Calculations"] },
-                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 1", tasks: ["1. Series and Parallel Circuits", "2. Electrical Circuit Rules", "3. Potential Dividers"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Front Matter", tasks: ["Write Abstract", "Compile Bibliography/Citations", "Create Title Page"] }
-            ]
-        },
-        {
-            date: "2026-01-04",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Review Topic 3", tasks: ["Review Topic 3A (Cells)", "Review Topic 3B (Mitosis/Meiosis)", "Exam Questions: Topic 3"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Study Concepts (1 Hour)", "Practice Questions (1 Hour)"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Editing", tasks: ["Full read-through", "Check spelling/grammar", "Format headers and layout"] }
-            ]
-        },
-        {
-            date: "2026-01-05",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Review Unit 1", tasks: ["Review Topic 3 (Bonding)", "Review Topic 4 (Org Intro)", "Review Topic 5 (Alkenes)"] },
-                { type: "physics", title: "Physics", topic: "Topic 4B: Circuits Part 2", tasks: ["4. EMF and Internal Resistance", "5. Power in Electric Circuits", "Exam Practice: Circuits"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Final Polish", tasks: ["Final formatting check", "Prepare submission file", "Check appendices (if any)"] }
-            ]
-        },
-        {
-            date: "2026-01-06",
-            subjects: [
-                { type: "biology", title: "Biology", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Weak Areas"] },
-                { type: "maths", title: "Maths", topic: "General Practice", tasks: ["Past Paper Attempt", "Review Mistakes"] },
-                { type: "epq", title: "EPQ Dissertation", topic: "Submission Day", tasks: ["Submit Dissertation", "Celebrate!"] }
-            ]
-        },
-        {
-            date: "2026-01-07",
-            subjects: [
-                { type: "chemistry", title: "Chemistry", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Mechanisms"] },
-                { type: "physics", title: "Physics", topic: "Full Exam Prep", tasks: ["Past Paper Attempt 1", "Review Mistakes", "Focus on Calculations"] }
-            ]
-        }
+    // --- State & User ---
+    let userId = localStorage.getItem('p43_user_id');
+    if (!userId) {
+        userId = 'student_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('p43_user_id', userId);
+    }
+    
+    let completedItems = {}; 
+    let selectedDayIndex = 0;
+    const mockStartDate = new Date("2026-02-24");
+
+    // --- Syllabus Content ---
+    const syllabus = {
+        maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
+        physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
+        biology: [ "Chemistry of Life", "Mammalian Transport", "CVD Health", "Membranes", "Proteins & DNA", "Genetics", "Stem Cells", "Practical Bio" ],
+        chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
+    };
+
+    // --- Past Paper Rotation ---
+    const pastPaperSchedule = [
+        { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
+        { papers: ["Biology U1", "Physics U2", "HPAT"] },
+        { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
+        { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
+        { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
+        { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
+        { papers: ["Biology U2", "Physics U3", "Maths P2"] },
+        { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
+        { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } 
     ];
 
-    // --- STATE MANAGEMENT ---
-    let currentState = {};
-    let selectedDateStr = "";
+    // --- Schedule Generator ---
+    const schedule = [];
+    const startDate = new Date("2026-01-12");
+    let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
 
-    // --- DOM ELEMENTS ---
-    const dateNav = document.getElementById('date-nav');
-    const cardsContainer = document.getElementById('cards-container');
-    const currentDateDisplay = document.getElementById('current-date-display');
-    const dayStatus = document.getElementById('day-status');
-    const globalProgressBar = document.getElementById('global-progress-bar');
-    const totalPercentDisplay = document.getElementById('total-percent');
-    const doneMessage = document.getElementById('done-message');
-    const syncStatus = document.getElementById('sync-status');
+    for (let i = 0; i < 43; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        const dayOfMonth = currentDate.getDate();
+        const month = currentDate.toLocaleString('default', { month: 'short' });
+        
+        let dayData = {
+            id: i,
+            dateObj: currentDate,
+            displayDate: { month, day: dayOfMonth, name: currentDate.toLocaleString('default', { weekday: 'short' }) },
+            type: 'revision', 
+            subjects: []
+        };
 
-    // --- FIREBASE SYNC LISTENER ---
-    const progressRef = ref(db, 'study_progress');
-    
-    onValue(progressRef, (snapshot) => {
-        const data = snapshot.val();
-        currentState = data || {};
-        
-        syncStatus.textContent = "Synced with Cloud ✓";
-        
-        // Refresh UI
-        renderDateNav();
-        renderDay();
-        updateGlobalProgress();
-    });
-
-    // --- INITIALIZATION ---
-    function init() {
-        const today = new Date().toISOString().split('T')[0];
-        
-        const scheduleDates = scheduleData.map(d => d.date);
-        if (scheduleDates.includes(today)) {
-            selectedDateStr = today;
+        if (i === 42) { 
+            dayData.type = 'rest';
+        } else if (i >= 33) {
+            dayData.type = 'exam';
+            const paperSet = pastPaperSchedule[i - 33];
+            paperSet.papers.forEach(paperName => {
+                dayData.subjects.push({
+                    title: paperName,
+                    tag: "PAST PAPER",
+                    tasks: ["Complete paper (Timed)", "Mark strictly", "Review errors"]
+                });
+            });
         } else {
-            if (today < scheduleDates[0]) selectedDateStr = scheduleDates[0];
-            else if (today > scheduleDates[scheduleDates.length - 1]) selectedDateStr = scheduleDates[scheduleDates.length - 1];
-            else selectedDateStr = scheduleDates[0];
+            if (i % 2 === 0) {
+                dayData.subjects.push({ title: "Mathematics", tag: "P2 / S1", tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Exam Qs", "Formulas"] });
+                dayData.subjects.push({ title: "Physics", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Definitions", "Calculations"] });
+                if(i < 30) { mIdx++; pIdx++; }
+            } else {
+                dayData.subjects.push({ title: "Biology", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Diagrams"] });
+                dayData.subjects.push({ title: "Chemistry", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Mechanisms", "Definitions"] });
+                if(i < 30) { bIdx++; cIdx++; }
+            }
         }
+        schedule.push(dayData);
+    }
 
-        renderDateNav();
-        renderDay();
+    // --- UI Functions ---
+    function calculateStats() {
+        const today = new Date();
+        const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
+        const daysLeftDisplay = document.getElementById('daysLeftDisplay');
+        if(daysLeftDisplay) daysLeftDisplay.textContent = `${Math.max(0, diff)} Days to Mocks`;
+
+        let totalTasks = 0;
+        let doneTasks = 0;
+        
+        schedule.forEach(day => {
+            if (day.type === 'rest') return;
+            day.subjects.forEach((sub, sIdx) => {
+                sub.tasks.forEach((_, tIdx) => {
+                    totalTasks++;
+                    if (completedItems[`d${day.id}_s${sIdx}_t${tIdx}`]) doneTasks++;
+                });
+            });
+        });
+
+        const pct = totalTasks === 0 ? 0 : (doneTasks / totalTasks) * 100;
+        const progressBar = document.getElementById('overallProgressBar');
+        if(progressBar) progressBar.style.width = `${pct}%`;
+    }
+
+    function renderScroller() {
+        const scroller = document.getElementById('dateScroller');
+        scroller.innerHTML = '';
+        
+        const todayStr = new Date().toDateString();
+        const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
+        if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
+
+        schedule.forEach((day, idx) => {
+            const el = document.createElement('div');
+            el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
+            el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
+            el.onclick = () => {
+                document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+                selectedDayIndex = idx;
+                renderDay(idx);
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            };
+            scroller.appendChild(el);
+        });
         
         setTimeout(() => {
-            const activeEl = document.querySelector('.date-pill.active');
-            if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            const active = document.querySelector('.date-chip.active');
+            if(active) active.scrollIntoView({ inline: 'center' });
         }, 100);
     }
 
-    // --- RENDERING ---
-    function renderDateNav() {
-        dateNav.innerHTML = '';
-        scheduleData.forEach(day => {
-            const dateObj = new Date(day.date);
-            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayNum = dateObj.getDate();
-            
-            const dayId = day.date;
-            const totalTasks = day.subjects.reduce((acc, sub) => acc + sub.tasks.length, 0);
-            let completedTasks = 0;
-            day.subjects.forEach(sub => {
-                sub.tasks.forEach((_, index) => {
-                    if (currentState[`${dayId}-${sub.title}-${index}`]) completedTasks++;
-                });
-            });
-            const isDayDone = totalTasks > 0 && totalTasks === completedTasks;
+    function renderDay(idx) {
+        const day = schedule[idx];
+        const container = document.getElementById('scheduleContent');
+        container.innerHTML = '';
 
-            const pill = document.createElement('div');
-            pill.className = `date-pill ${day.date === selectedDateStr ? 'active' : ''} ${isDayDone ? 'completed' : ''}`;
-            pill.innerHTML = `<span>${dayName}</span><span>${dayNum}</span>`;
-            
-            pill.addEventListener('click', () => {
-                selectedDateStr = day.date;
-                renderDateNav();
-                renderDay();
-            });
-            
-            dateNav.appendChild(pill);
-        });
-    }
-
-    function renderDay() {
-        const dayData = scheduleData.find(d => d.date === selectedDateStr);
-        if (!dayData) return;
-
-        const dateObj = new Date(dayData.date);
-        currentDateDisplay.textContent = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-
-        cardsContainer.innerHTML = '';
+        const title = document.getElementById('currentDateTitle');
+        const subtitle = document.getElementById('currentFocusSubtitle');
         
-        let totalTasksForDay = 0;
-        let completedTasksForDay = 0;
+        const isToday = day.dateObj.toDateString() === new Date().toDateString();
+        title.textContent = isToday ? "Today" : `${day.displayDate.name}, ${day.displayDate.month} ${day.displayDate.day}`;
 
-        dayData.subjects.forEach(subject => {
-            const card = document.createElement('div');
-            card.className = `subject-card ${subject.type}`;
-            
-            let tasksHtml = '';
-            subject.tasks.forEach((task, index) => {
-                totalTasksForDay++;
-                const taskId = `${dayData.date}-${subject.title}-${index}`;
-                const isChecked = currentState[taskId] ? 'completed' : '';
-                if(isChecked) completedTasksForDay++;
-
-                tasksHtml += `
-                    <li class="task-item ${isChecked}" id="task-${taskId}">
-                        <div class="checkbox"></div>
-                        <span class="task-text">${task}</span>
-                    </li>
-                `;
-            });
-
-            // Adjusted badge logic for EPQ
-            const timeEstimate = subject.type === 'epq' ? '1.5 Hours' : '2 Hours';
-
-            card.innerHTML = `
-                <div class="subject-header">
-                    <div class="subject-title">${subject.title}</div>
-                    <span class="subject-badge">${timeEstimate}</span>
-                </div>
-                <div class="topic-name">${subject.topic}</div>
-                <ul class="task-list">
-                    ${tasksHtml}
-                </ul>
-            `;
-            
-            const taskItems = card.querySelectorAll('.task-item');
-            taskItems.forEach((item, idx) => {
-                const taskId = `${dayData.date}-${subject.title}-${idx}`;
-                item.addEventListener('click', () => toggleTask(taskId));
-            });
-
-            cardsContainer.appendChild(card);
-        });
-
-        dayStatus.textContent = `${completedTasksForDay}/${totalTasksForDay} Tasks`;
-        
-        if (totalTasksForDay > 0 && totalTasksForDay === completedTasksForDay) {
-            doneMessage.style.display = 'block';
-        } else {
-            doneMessage.style.display = 'none';
+        if (day.type === 'rest') {
+            subtitle.textContent = "Recharge your mind.";
+            container.innerHTML = `<div class="card rest-mode"><span class="rest-icon">🧘</span><div class="rest-title">Rest Day</div><div class="rest-desc">No studying today.</div></div>`;
+            return;
         }
+
+        subtitle.textContent = day.type === 'exam' ? "Past Paper Mode." : "Deep Focus Revision.";
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        day.subjects.forEach((sub, sIdx) => {
+            const row = document.createElement('div');
+            row.className = 'subject-row';
+            let html = `<div class="subject-header"><div class="sub-name">${sub.title}</div><span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span></div>`;
+
+            sub.tasks.forEach((task, tIdx) => {
+                const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
+                const checked = completedItems[itemId] ? 'checked' : '';
+                // Note: We call window.toggle here, which we define below
+                html += `<div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')"><div class="checkbox"></div><div class="text">${task}</div></div>`;
+            });
+
+            row.innerHTML = html;
+            card.appendChild(row);
+        });
+        container.appendChild(card);
     }
 
-    // --- ACTIONS ---
-    function toggleTask(id) {
-        const isComplete = !currentState[id]; // Toggle value
+    // --- Actions ---
+    // We attach this to 'window' so the HTML onclick="" can see it
+    window.toggle = (id) => {
+        // 1. Optimistic UI update (Immediate)
+        const isChecked = !completedItems[id];
+        completedItems[id] = isChecked;
         
-        // Optimistic UI Update
-        const el = document.getElementById(`task-${id}`);
+        const el = document.getElementById(id);
         if(el) {
-            if(isComplete) {
-                el.classList.add('completed');
-                el.style.transform = "scale(0.98)";
-                setTimeout(() => el.style.transform = "scale(1)", 150);
-            } else {
-                el.classList.remove('completed');
-            }
+            if(isChecked) el.classList.add('checked');
+            else el.classList.remove('checked');
         }
+        calculateStats();
+        
+        // 2. Set Status immediately to "Saving"
+        const statusEl = document.getElementById('dbStatus');
+        statusEl.textContent = "Saving...";
+        statusEl.style.color = "#86868b";
 
-        // Send to Firebase
-        const updates = {};
-        updates['study_progress/' + id] = isComplete ? true : null;
-        update(ref(db), updates);
-    }
-
-    function updateGlobalProgress() {
-        let globalTotal = 0;
-        let globalCompleted = 0;
-
-        scheduleData.forEach(day => {
-            day.subjects.forEach(sub => {
-                sub.tasks.forEach((_, index) => {
-                    globalTotal++;
-                    if (currentState[`${day.date}-${sub.title}-${index}`]) globalCompleted++;
-                });
+        // 3. Fire and forget to Cloud Firestore
+        const docRef = doc(db, "users", userId);
+        setDoc(docRef, { progress: completedItems }, { merge: true })
+            .catch(err => {
+                console.error("Error writing document: ", err);
+                statusEl.textContent = "Error saving!";
+                statusEl.style.color = "red";
             });
-        });
+    };
 
-        const percent = globalTotal === 0 ? 0 : Math.round((globalCompleted / globalTotal) * 100);
-        globalProgressBar.style.width = `${percent}%`;
-        totalPercentDisplay.textContent = `${percent}%`;
+    // --- Init ---
+    async function init() {
+        renderScroller();
+        renderDay(selectedDayIndex);
+        calculateStats();
+
+        const docRef = doc(db, "users", userId);
+        
+        // Listen to Cloud Firestore
+        onSnapshot(docRef, (snap) => {
+            const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
+            
+            if (snap.exists()) {
+                const data = snap.data();
+                // Merge data carefully
+                completedItems = data.progress || {};
+                
+                // Re-render
+                renderDay(selectedDayIndex); 
+                calculateStats();
+                
+                const statusEl = document.getElementById('dbStatus');
+                if (source === "Local") {
+                    statusEl.textContent = "Unsynced changes...";
+                } else {
+                    statusEl.textContent = "All changes saved";
+                    statusEl.style.color = "#34c759";
+                }
+            }
+        });
     }
 
-    // Run
+    // Start
     init();
-
 </script>
+
+
 </body>
 </html>
