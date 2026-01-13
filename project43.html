@@ -258,17 +258,15 @@
     <div class="firebase-status" id="dbStatus">Syncing with cloud...</div>
 </main>
 
-<!-- Firebase SDK -->
-<!-- Firebase SDK -->
+<!-- Unified Script: Imports + Logic -->
 <script type="module">
-  // Import the functions you need from the SDKs you need
+  // 1. OFFICIAL IMPORTS (v12.7.0)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  
+  // 2. REQUIRED DATABASE IMPORTS (Missing in official basic snippet)
+  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyALPWZE3MlEjy0qhhGl_V8WZxBJyA3Vo68",
     authDomain: "mockexams-f756d.firebaseapp.com",
@@ -279,236 +277,232 @@
     measurementId: "G-ERY7L5MJ5N"
   };
 
-  // Initialize Firebase
+  // 3. INITIALIZATION
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
-</script>
-<script>
-    // --- State & User ---
-    let userId = localStorage.getItem('p43_user_id');
-    if (!userId) {
-        userId = 'student_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('p43_user_id', userId);
-    }
-    
-    let completedItems = {}; 
-    let selectedDayIndex = 0;
-    const mockStartDate = new Date("2026-02-24");
+  const db = getFirestore(app); // We must start the database here
 
-    // --- Syllabus Content (Kept same as your code) ---
-    const syllabus = {
-        maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
-        physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
-        biology: [ "Chemistry of Life", "Mammalian Transport", "CVD Health", "Membranes", "Proteins & DNA", "Genetics", "Stem Cells", "Practical Bio" ],
-        chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
-    };
+  // --- APP LOGIC STARTS HERE ---
+  // (We keep it inside this module so it can see 'db')
 
-    // --- Past Paper Rotation ---
-    const pastPaperSchedule = [
-        { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
-        { papers: ["Biology U1", "Physics U2", "HPAT"] },
-        { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
-        { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
-        { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
-        { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
-        { papers: ["Biology U2", "Physics U3", "Maths P2"] },
-        { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
-        { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } 
-    ];
+  let userId = localStorage.getItem('p43_user_id');
+  if (!userId) {
+      userId = 'student_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('p43_user_id', userId);
+  }
+  
+  let completedItems = {}; 
+  let selectedDayIndex = 0;
+  const mockStartDate = new Date("2026-02-24");
 
-    // --- Schedule Generator ---
-    const schedule = [];
-    const startDate = new Date("2026-01-12");
-    let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
+  const syllabus = {
+      maths: [ "Algebra & Functions", "Coordinate Geometry", "Exponentials & Logs", "Binomial Expansion", "Sequences & Series", "Trigonometry", "Differentiation", "Integration", "Data Measures", "Probability", "Correlation" ],
+      physics: [ "Motion & Graphs", "Energy & Momentum", "Fluids & Solids", "Waves Basics", "Light & Sound", "Circuits & Current", "Resistance & EMF", "Practical Skills" ],
+      biology: [ "Chemistry of Life", "Mammalian Transport", "CVD Health", "Membranes", "Proteins & DNA", "Genetics", "Stem Cells", "Practical Bio" ],
+      chemistry: [ "Formulae & Moles", "Atomic Structure", "Bonding", "Intro to Organic", "Alkenes", "Energetics", "Intermolecular Forces", "Redox & Groups", "Kinetics", "Alcohols" ]
+  };[[1](https://www.google.com/url?sa=E&q=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fgrounding-api-redirect%2FAUZIYQEPtEVteYsAQs-RquyFLOJFi0E7mtPlNdYgaQE9GsNza1nwYpMhmRFSx-lC5wE7v_2MITj2iS-RbU0yWs4bvvxwwSRlxcdw-z2fOTED7G7lvBeNL7R5bjZOpMsDbs4Zb6_nu-m5o19bVDbMWzuf574%3D)][[2](https://www.google.com/url?sa=E&q=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fgrounding-api-redirect%2FAUZIYQFznXvyUJTBIqNv-U9wSH_jwWZ1TI6bytAmB1MwS4F7Umm363abRRdH7bbIIpzKwGg6cjOdUsFGe1ZShaeG1nusoz5NIFhr2V2TeCOxJBFapeJLRTPWpXcf8id3qngCYW61YmUVL2suf-rn3P4ZuAU%3D)]
 
-    for (let i = 0; i < 43; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
-        
-        const dayOfMonth = currentDate.getDate();
-        const month = currentDate.toLocaleString('default', { month: 'short' });
-        
-        let dayData = {
-            id: i,
-            dateObj: currentDate,
-            displayDate: { month, day: dayOfMonth, name: currentDate.toLocaleString('default', { weekday: 'short' }) },
-            type: 'revision', 
-            subjects: []
-        };
+  const pastPaperSchedule = [
+      { papers: ["Maths P2", "Physics U1", "Chemistry U1"] },
+      { papers: ["Biology U1", "Physics U2", "HPAT"] },
+      { papers: ["Chemistry U2", "Biology U2", "Physics U3"] },
+      { papers: ["Maths P2", "Chemistry U3", "Biology U3"] },
+      { papers: ["Physics U1", "Chemistry U1", "Biology U1"] },
+      { papers: ["Maths S1", "Physics U2", "Chemistry U2"] },
+      { papers: ["Biology U2", "Physics U3", "Maths P2"] },
+      { papers: ["Chemistry U3", "Biology U3", "Physics U1"] },
+      { papers: ["Maths S1", "Biology U1", "Chemistry U1"] } 
+  ];
 
-        if (i === 42) { 
-            dayData.type = 'rest';
-        } else if (i >= 33) {
-            dayData.type = 'exam';
-            const paperSet = pastPaperSchedule[i - 33];
-            paperSet.papers.forEach(paperName => {
-                dayData.subjects.push({
-                    title: paperName,
-                    tag: "PAST PAPER",
-                    tasks: ["Complete paper (Timed)", "Mark strictly", "Review errors"]
-                });
-            });
-        } else {
-            if (i % 2 === 0) {
-                dayData.subjects.push({ title: "Mathematics", tag: "P2 / S1", tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Exam Qs", "Formulas"] });
-                dayData.subjects.push({ title: "Physics", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Definitions", "Calculations"] });
-                if(i < 30) { mIdx++; pIdx++; }
-            } else {
-                dayData.subjects.push({ title: "Biology", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Diagrams"] });
-                dayData.subjects.push({ title: "Chemistry", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Mechanisms", "Definitions"] });
-                if(i < 30) { bIdx++; cIdx++; }
-            }
-        }
-        schedule.push(dayData);
-    }
+  // --- Schedule Generator ---
+  const schedule = [];
+  const startDate = new Date("2026-01-12");
+  let mIdx=0, pIdx=0, bIdx=0, cIdx=0;
 
-    // --- UI Functions ---
-    function calculateStats() {
-        const today = new Date();
-        const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
-        document.getElementById('daysLeftDisplay').textContent = `${Math.max(0, diff)} Days to Mocks`;
+  for (let i = 0; i < 43; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const dayOfMonth = currentDate.getDate();
+      const month = currentDate.toLocaleString('default', { month: 'short' });
+      
+      let dayData = {
+          id: i,
+          dateObj: currentDate,
+          displayDate: { month, day: dayOfMonth, name: currentDate.toLocaleString('default', { weekday: 'short' }) },
+          type: 'revision', 
+          subjects: []
+      };
 
-        let totalTasks = 0;
-        let doneTasks = 0;
-        
-        schedule.forEach(day => {
-            if (day.type === 'rest') return;
-            day.subjects.forEach((sub, sIdx) => {
-                sub.tasks.forEach((_, tIdx) => {
-                    totalTasks++;
-                    if (completedItems[`d${day.id}_s${sIdx}_t${tIdx}`]) doneTasks++;
-                });
-            });
-        });
+      if (i === 42) { 
+          dayData.type = 'rest';
+      } else if (i >= 33) {
+          dayData.type = 'exam';
+          const paperSet = pastPaperSchedule[i - 33];
+          paperSet.papers.forEach(paperName => {
+              dayData.subjects.push({
+                  title: paperName,
+                  tag: "PAST PAPER",
+                  tasks: ["Complete paper (Timed)", "Mark strictly", "Review errors"]
+              });
+          });
+      } else {
+          if (i % 2 === 0) {
+              dayData.subjects.push({ title: "Mathematics", tag: "P2 / S1", tasks: [`Topic: ${syllabus.maths[mIdx % syllabus.maths.length]}`, "Exam Qs", "Formulas"] });
+              dayData.subjects.push({ title: "Physics", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.physics[pIdx % syllabus.physics.length]}`, "Definitions", "Calculations"] });
+              if(i < 30) { mIdx++; pIdx++; }
+          } else {
+              dayData.subjects.push({ title: "Biology", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.biology[bIdx % syllabus.biology.length]}`, "Active Recall", "Diagrams"] });
+              dayData.subjects.push({ title: "Chemistry", tag: "IAL Unit 1/2/3", tasks: [`Topic: ${syllabus.chemistry[cIdx % syllabus.chemistry.length]}`, "Mechanisms", "Definitions"] });
+              if(i < 30) { bIdx++; cIdx++; }
+          }
+      }
+      schedule.push(dayData);
+  }
 
-        const pct = totalTasks === 0 ? 0 : (doneTasks / totalTasks) * 100;
-        document.getElementById('overallProgressBar').style.width = `${pct}%`;
-    }
+  // --- UI Functions ---
+  function calculateStats() {
+      const today = new Date();
+      const diff = Math.ceil((mockStartDate - today) / (1000 * 60 * 60 * 24));
+      document.getElementById('daysLeftDisplay').textContent = `${Math.max(0, diff)} Days to Mocks`;
 
-    function renderScroller() {
-        const scroller = document.getElementById('dateScroller');
-        scroller.innerHTML = '';
-        
-        const todayStr = new Date().toDateString();
-        const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
-        if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
+      let totalTasks = 0;
+      let doneTasks = 0;
+      
+      schedule.forEach(day => {
+          if (day.type === 'rest') return;
+          day.subjects.forEach((sub, sIdx) => {
+              sub.tasks.forEach((_, tIdx) => {
+                  totalTasks++;
+                  if (completedItems[`d${day.id}_s${sIdx}_t${tIdx}`]) doneTasks++;
+              });
+          });
+      });
 
-        schedule.forEach((day, idx) => {
-            const el = document.createElement('div');
-            el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
-            el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
-            el.onclick = () => {
-                document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
-                el.classList.add('active');
-                selectedDayIndex = idx;
-                renderDay(idx);
-                el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            };
-            scroller.appendChild(el);
-        });
-        
-        setTimeout(() => {
-            const active = document.querySelector('.date-chip.active');
-            if(active) active.scrollIntoView({ inline: 'center' });
-        }, 100);
-    }
+      const pct = totalTasks === 0 ? 0 : (doneTasks / totalTasks) * 100;
+      document.getElementById('overallProgressBar').style.width = `${pct}%`;
+  }
 
-    function renderDay(idx) {
-        const day = schedule[idx];
-        const container = document.getElementById('scheduleContent');
-        container.innerHTML = '';
+  function renderScroller() {
+      const scroller = document.getElementById('dateScroller');
+      scroller.innerHTML = '';
+      
+      const todayStr = new Date().toDateString();
+      const todayIdx = schedule.findIndex(d => d.dateObj.toDateString() === todayStr);
+      if (selectedDayIndex === 0 && todayIdx !== -1) selectedDayIndex = todayIdx;
 
-        const title = document.getElementById('currentDateTitle');
-        const subtitle = document.getElementById('currentFocusSubtitle');
-        
-        const isToday = day.dateObj.toDateString() === new Date().toDateString();
-        title.textContent = isToday ? "Today" : `${day.displayDate.name}, ${day.displayDate.month} ${day.displayDate.day}`;
+      schedule.forEach((day, idx) => {
+          const el = document.createElement('div');
+          el.className = `date-chip ${idx === selectedDayIndex ? 'active' : ''} ${day.type === 'rest' ? 'rest-day-marker' : ''}`;
+          el.innerHTML = `${day.displayDate.month} ${day.displayDate.day}<span>${day.displayDate.name}</span>`;
+          el.onclick = () => {
+              document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+              el.classList.add('active');
+              selectedDayIndex = idx;
+              renderDay(idx);
+              el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+          };
+          scroller.appendChild(el);
+      });
+      
+      setTimeout(() => {
+          const active = document.querySelector('.date-chip.active');
+          if(active) active.scrollIntoView({ inline: 'center' });
+      }, 100);
+  }
 
-        if (day.type === 'rest') {
-            subtitle.textContent = "Recharge your mind.";
-            container.innerHTML = `<div class="card rest-mode"><span class="rest-icon">🧘</span><div class="rest-title">Rest Day</div><div class="rest-desc">No studying today.</div></div>`;
-            return;
-        }
+  function renderDay(idx) {
+      const day = schedule[idx];
+      const container = document.getElementById('scheduleContent');
+      container.innerHTML = '';
 
-        subtitle.textContent = day.type === 'exam' ? "Past Paper Mode." : "Deep Focus Revision.";
+      const title = document.getElementById('currentDateTitle');
+      const subtitle = document.getElementById('currentFocusSubtitle');
+      
+      const isToday = day.dateObj.toDateString() === new Date().toDateString();
+      title.textContent = isToday ? "Today" : `${day.displayDate.name}, ${day.displayDate.month} ${day.displayDate.day}`;
 
-        const card = document.createElement('div');
-        card.className = 'card';
-        
-        day.subjects.forEach((sub, sIdx) => {
-            const row = document.createElement('div');
-            row.className = 'subject-row';
-            let html = `<div class="subject-header"><div class="sub-name">${sub.title}</div><span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span></div>`;
+      if (day.type === 'rest') {
+          subtitle.textContent = "Recharge your mind.";
+          container.innerHTML = `<div class="card rest-mode"><span class="rest-icon">🧘</span><div class="rest-title">Rest Day</div><div class="rest-desc">No studying today.</div></div>`;
+          return;
+      }
 
-            sub.tasks.forEach((task, tIdx) => {
-                const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
-                const checked = completedItems[itemId] ? 'checked' : '';
-                html += `<div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')"><div class="checkbox"></div><div class="text">${task}</div></div>`;
-            });
+      subtitle.textContent = day.type === 'exam' ? "Past Paper Mode." : "Deep Focus Revision.";
 
-            row.innerHTML = html;
-            card.appendChild(row);
-        });
-        container.appendChild(card);
-    }
+      const card = document.createElement('div');
+      card.className = 'card';
+      
+      day.subjects.forEach((sub, sIdx) => {
+          const row = document.createElement('div');
+          row.className = 'subject-row';
+          let html = `<div class="subject-header"><div class="sub-name">${sub.title}</div><span class="paper-tag" style="background:${day.type==='exam' ? '#FF2D55' : '#000'}">${sub.tag}</span></div>`;
 
-    // --- Actions ---
-    window.toggle = (id) => {
-        // 1. Optimistic UI update (Immediate)
-        const isChecked = !completedItems[id];
-        completedItems[id] = isChecked;
-        
-        const el = document.getElementById(id);
-        if(el) {
-            if(isChecked) el.classList.add('checked');
-            else el.classList.remove('checked');
-        }
-        calculateStats();
-        
-        // 2. Set Status immediately to "Saving"
-        const statusEl = document.getElementById('dbStatus');
-        statusEl.textContent = "Saving...";
-        statusEl.style.color = "#86868b";
+          sub.tasks.forEach((task, tIdx) => {
+              const itemId = `d${day.id}_s${sIdx}_t${tIdx}`;
+              const checked = completedItems[itemId] ? 'checked' : '';
+              // IMPORTANT: Using window.toggle here
+              html += `<div class="checklist-item ${checked}" id="${itemId}" onclick="window.toggle('${itemId}')"><div class="checkbox"></div><div class="text">${task}</div></div>`;
+          });
 
-        // 3. Fire and forget (don't await)
-        const docRef = doc(db, "users", userId);
-        setDoc(docRef, { progress: completedItems }, { merge: true });
-    };
+          row.innerHTML = html;
+          card.appendChild(row);
+      });
+      container.appendChild(card);
+  }
 
-    // --- Init ---
-    async function init() {
-        renderScroller();
-        renderDay(selectedDayIndex);
-        calculateStats();
+  // --- ACTIONS (Must be attached to window to work in HTML) ---
+  window.toggle = (id) => {
+      // 1. Optimistic UI update
+      const isChecked = !completedItems[id];
+      completedItems[id] = isChecked;
+      
+      const el = document.getElementById(id);
+      if(el) {
+          if(isChecked) el.classList.add('checked');
+          else el.classList.remove('checked');
+      }
+      calculateStats();
+      
+      // 2. Set Status
+      const statusEl = document.getElementById('dbStatus');
+      statusEl.textContent = "Saving...";
+      statusEl.style.color = "#86868b";
 
-        const docRef = doc(db, "users", userId);
-        
-        // Listen with metadata to distinguish local vs server events
-        onSnapshot(docRef, (snap) => {
-            const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
-            
-            if (snap.exists()) {
-                completedItems = snap.data().progress || {};
-                
-                // Only re-render if it's a server update to prevent UI jitter
-                // or if we just loaded for the first time
-                renderDay(selectedDayIndex); 
-                calculateStats();
-                
-                const statusEl = document.getElementById('dbStatus');
-                if (source === "Local") {
-                    statusEl.textContent = "Unsynced changes...";
-                } else {
-                    statusEl.textContent = "All changes saved";
-                    statusEl.style.color = "#34c759";
-                }
-            }
-        });
-    }
+      // 3. Save to Firebase (using the 'db' initialized in this module)
+      const docRef = doc(db, "users", userId);
+      setDoc(docRef, { progress: completedItems }, { merge: true });
+  };
 
-    init();
+  // --- INIT ---
+  async function init() {
+      renderScroller();
+      renderDay(selectedDayIndex);
+      calculateStats();
+
+      const docRef = doc(db, "users", userId);
+      
+      // Live listener
+      onSnapshot(docRef, (snap) => {
+          const source = snap.metadata.hasPendingWrites ? "Local" : "Server";
+          
+          if (snap.exists()) {
+              completedItems = snap.data().progress || {};
+              renderDay(selectedDayIndex); 
+              calculateStats();
+              
+              const statusEl = document.getElementById('dbStatus');
+              if (source === "Local") {
+                  statusEl.textContent = "Unsynced changes...";
+              } else {
+                  statusEl.textContent = "All changes saved";
+                  statusEl.style.color = "#34c759";
+              }
+          }
+      });
+  }
+
+  init();
 </script>
 </body>
 </html>
-
-
